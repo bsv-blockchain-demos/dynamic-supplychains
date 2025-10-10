@@ -12,13 +12,14 @@ import { ObjectId } from "mongodb";
  * - stage: ActionChainStage - The stage data (title, Timestamp, TransactionID)
  * - isFirst: boolean - Whether this is the first stage (creates new ActionChain)
  * - actionChainId?: string - Required if isFirst is false, the ID of the existing ActionChain
+ * - chainTitle?: string - The title of the ActionChain (only used when isFirst is true)
  */
 export async function POST(request: NextRequest) {
     try {
         const { actionChainCollection } = await connectToMongo();
         const body = await request.json();
         
-        const { userId, stage, isFirst, actionChainId } = body;
+        const { userId, stage, isFirst, actionChainId, chainTitle } = body;
 
         // Validate required fields
         if (!userId || !stage || typeof isFirst !== 'boolean') {
@@ -40,6 +41,7 @@ export async function POST(request: NextRequest) {
             // Create new ActionChain with the first stage
             const newActionChain = {
                 userId,
+                title: chainTitle || 'Untitled Chain',
                 stages: [stage],
                 createdAt: new Date(),
                 updatedAt: new Date(),

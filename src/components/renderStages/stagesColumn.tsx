@@ -92,6 +92,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     stage: newStage,
                     isFirst,
                     actionChainId: actionChainId,
+                    chainTitle: isFirst ? chainTitle : undefined,
                 }),
             });
 
