@@ -1,4 +1,4 @@
-import { PushDrop, WalletInterface, LockingScript, WalletProtocol, SymmetricKey, Utils } from "@bsv/sdk";
+import { PushDrop, WalletInterface, LockingScript, WalletProtocol, SymmetricKey } from "@bsv/sdk";
 
 const customInstructions = {
     protocolID: [0, 'supplychain'] as WalletProtocol,

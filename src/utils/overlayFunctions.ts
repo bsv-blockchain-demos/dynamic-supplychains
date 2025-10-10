@@ -31,5 +31,6 @@ export async function getTransactionByTxid(txid: string) {
         return response;
     } catch (error) {
         console.error("Error getting transaction:", error);
+        throw error;
     }
 }

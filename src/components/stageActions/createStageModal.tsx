@@ -1,13 +1,12 @@
 'use client';
 
 import { useState } from "react";
-import { ActionChainStage } from "../../lib/mongo";
 import { ChainTemplate, StageTemplate } from "./createModalTemplates";
 
 interface CreateStageModalProps {
     isOpen: boolean;
     onClose: () => void;
-    onSubmit: (stage: ActionChainStage) => void;
+    onSubmit: (stage: Record<string, string>) => void;
     selectedTemplate?: ChainTemplate | null;
     stageIndex?: number;
 }
@@ -63,29 +62,18 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Convert metadata fields to JSON object
-        const metadataObject: Record<string, string> = {};
+        // Convert metadata fields to JSON object and include title
+        const metadataObject: Record<string, string> = {
+            title: title
+        };
         metadataFields.forEach(field => {
             if (field.key && field.value) {
                 metadataObject[field.key] = field.value;
             }
         });
 
-        // TransactionID will come from the wallet create pushdrop
-        const txid = await createPushdropToken(metadataObject);
-
-        // Create new stage object
-        const newStage: ActionChainStage = {
-            title: title,
-            Timestamp: new Date(),
-            TransactionID: txid,
-        };
-
-        // TODO: Implement API call to save stage to database
-        console.log("Creating stage:", newStage);
-
-        // Call the onSubmit callback with the new stage
-        onSubmit(newStage);
+        // Call the onSubmit callback with the stage data
+        onSubmit(metadataObject);
 
         // Reset form and close modal
         setTitle("");
@@ -266,8 +254,3 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
         </div>
     );
 };
-
-async function createPushdropToken(metadata: Record<string, string>) {
-    // TODO: Implement pushdrop creation logic
-    return "txid";
-}
