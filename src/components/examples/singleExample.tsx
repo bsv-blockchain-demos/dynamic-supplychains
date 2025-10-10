@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ActionChainStage } from "../../lib/mongo";
 import { StageItem } from "../renderStages/stageItem";
+import { Spinner } from "../ui/spinner";
 
 interface ActionChainDetail {
     _id: string;
@@ -53,7 +54,8 @@ export const SingleExample = ({ actionChainId }: SingleExampleProps) => {
 
     if (isLoading) {
         return (
-            <div className="text-center text-white">
+            <div className="text-center text-white flex flex-col items-center gap-4">
+                <Spinner size="lg" />
                 <p>Loading action chain...</p>
             </div>
         );

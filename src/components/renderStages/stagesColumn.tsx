@@ -10,6 +10,7 @@ import { createPushdrop, unlockPushdrop } from "../../utils/pushdropHelpers";
 import { broadcastTransaction, getTransactionByTxid } from "../../utils/overlayFunctions";
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
+import { Spinner } from "../ui/spinner";
 
 const MAX_STAGES = 8;
 const MIN_STAGES = 2;
@@ -21,6 +22,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     const [selectedTemplate, setSelectedTemplate] = useState<ChainTemplate | null>(null);
     const [actionChainId, setActionChainId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
+    const [isFinalizing, setIsFinalizing] = useState(false);
 
     const { userWallet, userPubKey } = useWalletContext();
 
@@ -146,6 +148,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             return;
         }
 
+        setIsFinalizing(true);
         try {
             const response = await fetch('/api/stages/finalize', {
                 method: 'POST',
@@ -177,11 +180,23 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
         } catch (error) {
             console.error('Error finalizing chain:', error);
             toast.error('Failed to finalize the action chain');
+        } finally {
+            setIsFinalizing(false);
         }
     };
 
     const isMaxReached = stages.length >= MAX_STAGES;
     const needsMoreStages = stages.length < MIN_STAGES;
+
+    // Show loading spinner while fetching current chain
+    if (isLoading) {
+        return (
+            <div className="w-full flex flex-col items-center gap-4 py-8">
+                <Spinner size="lg" />
+                <p className="text-white">Loading your action chain...</p>
+            </div>
+        );
+    }
 
     return (
         <>
@@ -250,9 +265,11 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     <div className="w-full max-w-xl">
                         <button
                             onClick={handleFinalizeChain}
-                            className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+                            disabled={isFinalizing}
+                            className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center gap-3"
                         >
-                            ✓ Finalize Action Chain ({stages.length} stages)
+                            {isFinalizing && <Spinner size="sm" />}
+                            {isFinalizing ? 'Finalizing...' : `✓ Finalize Action Chain (${stages.length} stages)`}
                         </button>
                         <p className="text-xs text-blue-200 mt-2 text-center">
                             This will complete and submit your action chain to the blockchain
@@ -268,19 +285,42 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 {/* Add new stage card */}
                 {!isMaxReached ? (
                     <div
-                        onClick={() => setIsModalOpen(true)}
-                        className="w-full max-w-xl bg-white rounded-xl border-2 border-dashed border-gray-400 hover:border-blue-500 transition-all cursor-pointer min-h-[280px] flex items-center justify-center group shadow-[6px_8px_16px_rgba(0,0,0,0.25)] hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)]"
+                        onClick={() => {
+                            if (!userWallet) {
+                                toast.error('Please connect your wallet to add stages');
+                                return;
+                            }
+                            setIsModalOpen(true);
+                        }}
+                        className={`w-full max-w-xl bg-white rounded-xl border-2 border-dashed min-h-[280px] flex items-center justify-center group shadow-[6px_8px_16px_rgba(0,0,0,0.25)] transition-all ${
+                            userWallet
+                                ? 'border-gray-400 hover:border-blue-500 cursor-pointer hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)]'
+                                : 'border-gray-300 cursor-not-allowed opacity-60'
+                        }`}
                     >
                         <div className="text-center">
-                            <div className="text-6xl text-gray-300 group-hover:text-blue-400 transition-colors mb-2">
+                            <div className={`text-6xl transition-colors mb-2 ${
+                                userWallet
+                                    ? 'text-gray-300 group-hover:text-blue-400'
+                                    : 'text-gray-200'
+                            }`}>
                                 +
                             </div>
-                            <p className="text-gray-400 group-hover:text-blue-500 transition-colors text-sm font-medium">
+                            <p className={`transition-colors text-sm font-medium ${
+                                userWallet
+                                    ? 'text-gray-400 group-hover:text-blue-500'
+                                    : 'text-gray-300'
+                            }`}>
                                 Add Stage
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
                                 {stages.length}/{MAX_STAGES} stages
                             </p>
+                            {!userWallet && (
+                                <p className="text-xs text-red-500 mt-2">
+                                    Wallet required
+                                </p>
+                            )}
                         </div>
                     </div>
                 ) : (

@@ -9,20 +9,24 @@ import { toast } from "react-hot-toast";
 type WalletContextType = {
     userWallet: WalletClient | null;
     userPubKey: string | null;
+    isConnecting: boolean;
     initializeWallet: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType>({
     userWallet: null,
     userPubKey: null,
+    isConnecting: false,
     initializeWallet: async () => { },
 });
 
 export const WalletContextProvider = ({ children }: { children: React.ReactNode }) => {
     const [userWallet, setUserWallet] = useState<WalletContextType['userWallet']>(null);
     const [userPubKey, setUserPubKey] = useState<WalletContextType['userPubKey']>(null);
+    const [isConnecting, setIsConnecting] = useState(false);
 
     const initializeWallet = useCallback(async () => {
+        setIsConnecting(true);
         try {
             const newWallet = new WalletClient('auto', 'localhost:4000');
 
@@ -49,6 +53,8 @@ export const WalletContextProvider = ({ children }: { children: React.ReactNode 
                 position: 'top-center',
                 id: 'wallet-connect-error',
             });
+        } finally {
+            setIsConnecting(false);
         }
     }, []);
 
@@ -57,7 +63,7 @@ export const WalletContextProvider = ({ children }: { children: React.ReactNode 
     }, []);
 
     return (
-        <WalletContext.Provider value={{ userWallet, userPubKey, initializeWallet }}>
+        <WalletContext.Provider value={{ userWallet, userPubKey, isConnecting, initializeWallet }}>
             {children}
         </WalletContext.Provider>
     );

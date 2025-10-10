@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import { Spinner } from "../ui/spinner";
 
 interface ActionChainCard {
     _id: string;
@@ -51,7 +52,8 @@ export const ExamplesList = () => {
 
             {/* Loading State */}
             {isLoading && (
-                <div className="text-center text-white">
+                <div className="text-center text-white flex flex-col items-center gap-4">
+                    <Spinner size="lg" />
                     <p>Loading action chains...</p>
                 </div>
             )}

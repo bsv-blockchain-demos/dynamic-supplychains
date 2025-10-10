@@ -1,7 +1,8 @@
 'use client';
 
-import { useState } from "react";
-import { ChainTemplate, StageTemplate } from "./createModalTemplates";
+import { useState, useEffect } from "react";
+import { CHAIN_TEMPLATES, ChainTemplate, StageTemplate } from "./createModalTemplates";
+import { Spinner } from "../ui/spinner";
 
 interface CreateStageModalProps {
     isOpen: boolean;
@@ -30,7 +31,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
 
     const applyTemplate = (stageTemplate: StageTemplate) => {
         setTitle(stageTemplate.name);
-        const newFields: MetadataField[] = stageTemplate.keys.map((key, index) => ({
+        const newFields: MetadataField[] = stageTemplate.keys.map((key: string, index: number) => ({
             id: `${Date.now()}-${index}`,
             key,
             value: ""
@@ -243,9 +244,10 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                         </button>
                         <button
                             type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer"
+                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
                             disabled={isSubmitting}
                         >
+                            {isSubmitting && <Spinner size="sm" />}
                             {isSubmitting ? "Creating..." : "Create Stage"}
                         </button>
                     </div>
