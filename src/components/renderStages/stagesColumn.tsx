@@ -8,7 +8,8 @@ import { useWalletContext } from "../../context/walletContext";
 import { Transaction, WalletClient } from "@bsv/sdk";
 import { createPushdrop, unlockPushdrop } from "../../utils/pushdropHelpers";
 import { broadcastTransaction, getTransactionByTxid } from "../../utils/overlayFunctions";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { toast } from "react-hot-toast";
 
 const MAX_STAGES = 8;
 const MIN_STAGES = 2;
@@ -18,8 +19,36 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     const [stages, setStages] = useState<ActionChainStage[]>(props.stages || []);
     const [chainTitle, setChainTitle] = useState("");
     const [selectedTemplate, setSelectedTemplate] = useState<ChainTemplate | null>(null);
+    const [actionChainId, setActionChainId] = useState<string | null>(null);
+    const [isLoading, setIsLoading] = useState(true);
 
-    const { userWallet } = useWalletContext();
+    const { userWallet, userPubKey } = useWalletContext();
+
+    // Fetch current ActionChain on mount
+    useEffect(() => {
+        const fetchCurrentChain = async () => {
+            if (!userPubKey) {
+                setIsLoading(false);
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/stages/current?userId=${encodeURIComponent(userPubKey)}`);
+                const data = await response.json();
+
+                if (data.hasActiveChain && data.actionChain) {
+                    setActionChainId(data.actionChain._id);
+                    setStages(data.actionChain.stages);
+                }
+            } catch (error) {
+                console.error('Error fetching current chain:', error);
+            } finally {
+                setIsLoading(false);
+            }
+        };
+
+        fetchCurrentChain();
+    }, [userPubKey]);
 
     const handleAddStage = async (data: Record<string, string>) => {
         const isFirst = stages.length === 0;
@@ -29,13 +58,20 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
         }
 
         if (!userWallet) {
+            toast.error('Wallet not initialized');
             throw new Error("Wallet not initialized");
+        }
+
+        if (!userPubKey) {
+            toast.error('User public key not found');
+            throw new Error("User public key not found");
         }
 
         // TransactionID will come from the wallet create pushdrop
         const txid = await createPushdropToken(userWallet, data, isFirst, lastStage);
 
         if (!txid) {
+            toast.error('Failed to create pushdrop token');
             throw new Error("Failed to create pushdrop token");
         }
 
@@ -46,18 +82,102 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             TransactionID: txid,
         };
 
-        // TODO: Implement API call to save stage to database
-        // if isFirst is true API route will create the new ActionChain item with the first stage
-        // if isFirst is false API route will add the new stage to the existing ActionChain item
-        console.log("Creating stage:", newStage);
+        // Save stage to database
+        try {
+            const response = await fetch('/api/stages/new-stage', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userPubKey,
+                    stage: newStage,
+                    isFirst,
+                    actionChainId: actionChainId,
+                }),
+            });
 
-        // After creating the first stage, put a lock on the user with locksCollection so that the user can only update this ActionChain until fully submitted
+            const result = await response.json();
 
-        // Add new stage to the BOTTOM of the array (append)
-        setStages([...stages, newStage]);
+            if (!response.ok) {
+                toast.error(result.error || 'Failed to save stage');
+                throw new Error(result.error || 'Failed to save stage');
+            }
+
+            // If this is the first stage, save the actionChainId and create a lock
+            if (isFirst) {
+                setActionChainId(result.actionChainId);
+                
+                // Create lock for the user
+                const lockResponse = await fetch('/api/lock', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        userId: userPubKey,
+                        actionChainId: result.actionChainId,
+                    }),
+                });
+
+                if (!lockResponse.ok) {
+                    toast.error('Failed to create lock for action chain');
+                }
+            }
+
+            console.log('Stage saved successfully:', result);
+            toast.success(`Stage "${data.title}" added successfully!`);
+            
+            // Add new stage to the BOTTOM of the array (append)
+            setStages([...stages, newStage]);
+        } catch (error) {
+            console.error('Error saving stage:', error);
+            toast.error('An error occurred while saving the stage');
+            throw error;
+        }
     };
 
-    // TODO: New function that submits/concludes the ActionChain
+    const handleFinalizeChain = async () => {
+        if (!userPubKey || !actionChainId) {
+            console.error('Missing userPubKey or actionChainId');
+            toast.error('Missing user credentials or chain ID');
+            return;
+        }
+
+        if (stages.length < MIN_STAGES) {
+            toast.error(`You need at least ${MIN_STAGES} stages to finalize the chain`);
+            return;
+        }
+
+        try {
+            const response = await fetch('/api/stages/finalize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userPubKey,
+                    actionChainId,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                toast.error(result.error || 'Failed to finalize chain');
+                throw new Error(result.error || 'Failed to finalize chain');
+            }
+
+            console.log('Chain finalized successfully:', result);
+            toast.success(`ActionChain finalized with ${result.stagesCount} stages!`, {
+                duration: 5000,
+                icon: '✅',
+            });
+            
+            // Reset state for new chain
+            setStages([]);
+            setActionChainId(null);
+            setChainTitle('');
+            setSelectedTemplate(null);
+        } catch (error) {
+            console.error('Error finalizing chain:', error);
+            toast.error('Failed to finalize the action chain');
+        }
+    };
 
     const isMaxReached = stages.length >= MAX_STAGES;
     const needsMoreStages = stages.length < MIN_STAGES;
@@ -120,6 +240,21 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     <div className="w-full max-w-xl bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
                         <p className="text-sm text-yellow-700">
                             <strong>Note:</strong> You need at least {MIN_STAGES} stages. Currently: {stages.length}/{MIN_STAGES}
+                        </p>
+                    </div>
+                )}
+
+                {/* Finalize Button */}
+                {stages.length >= MIN_STAGES && actionChainId && (
+                    <div className="w-full max-w-xl">
+                        <button
+                            onClick={handleFinalizeChain}
+                            className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 text-white rounded-lg font-bold text-lg transition-colors shadow-lg hover:shadow-xl"
+                        >
+                            ✓ Finalize Action Chain ({stages.length} stages)
+                        </button>
+                        <p className="text-xs text-blue-200 mt-2 text-center">
+                            This will complete and submit your action chain to the blockchain
                         </p>
                     </div>
                 )}

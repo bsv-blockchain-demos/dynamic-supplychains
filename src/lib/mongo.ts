@@ -17,6 +17,8 @@ export interface ActionChain {
     stages: ActionChainStage[];
     createdAt?: Date | null;
     updatedAt?: Date | null;
+    finalized?: boolean;
+    finalizedAt?: Date | null;
 }
 
 // Action-lock to prevent multiple actions from being processed at the same time
