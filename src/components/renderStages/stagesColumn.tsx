@@ -3,6 +3,7 @@
 import { ActionChainStage } from "../../lib/mongo";
 import { StageItem } from "./stageItem";
 import { CreateStageModal } from "../stageActions/createStageModal";
+import { CHAIN_TEMPLATES, ChainTemplate } from "../stageActions/createModalTemplates";
 import { useState } from "react";
 
 const MAX_STAGES = 8;
@@ -11,6 +12,8 @@ const MIN_STAGES = 2;
 export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [stages, setStages] = useState<ActionChainStage[]>(props.stages || []);
+    const [chainTitle, setChainTitle] = useState("");
+    const [selectedTemplate, setSelectedTemplate] = useState<ChainTemplate | null>(null);
 
     const handleAddStage = (newStage: ActionChainStage) => {
         // Add new stage to the BOTTOM of the array (append)
@@ -23,6 +26,57 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     return (
         <>
             <div className="w-full flex flex-col items-center gap-8 py-8">
+                {/* Chain Title Input */}
+                <div className="w-full max-w-xl">
+                    <label htmlFor="chainTitle" className="block text-sm font-medium text-white mb-2">
+                        Action Chain Title
+                    </label>
+                    <input
+                        id="chainTitle"
+                        type="text"
+                        value={chainTitle}
+                        onChange={(e) => setChainTitle(e.target.value)}
+                        placeholder="Choose a template or enter your own title"
+                        className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition text-black font-medium bg-white shadow-lg"
+                    />
+                    
+                    {/* Template Selection Buttons */}
+                    <div className="mt-3">
+                        <p className="text-xs font-medium text-blue-200 mb-2">Quick Templates:</p>
+                        <div className="flex gap-2 flex-wrap">
+                            {CHAIN_TEMPLATES.map((template) => (
+                                <button
+                                    key={template.title}
+                                    type="button"
+                                    onClick={() => {
+                                        if (selectedTemplate?.title === template.title) {
+                                            // Deselect if clicking the already selected template
+                                            setSelectedTemplate(null);
+                                        } else {
+                                            // Select the template and set the title
+                                            setChainTitle(template.title);
+                                            setSelectedTemplate(template);
+                                        }
+                                    }}
+                                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all hover:cursor-pointer ${
+                                        selectedTemplate?.title === template.title
+                                            ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-300'
+                                            : 'bg-white text-blue-900 hover:bg-blue-50 shadow-md hover:shadow-lg'
+                                    }`}
+                                >
+                                    {template.title}
+                                </button>
+                            ))}
+                        </div>
+                    </div>
+                    
+                    {chainTitle && (
+                        <p className="text-xs text-blue-200 mt-3">
+                            💡 Tip: Template stages will appear with pre-filled metadata fields when creating stages
+                        </p>
+                    )}
+                </div>
+
                 {/* Info message */}
                 {needsMoreStages && stages.length > 0 && (
                     <div className="w-full max-w-xl bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
@@ -74,6 +128,8 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 isOpen={isModalOpen} 
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleAddStage}
+                selectedTemplate={selectedTemplate}
+                stageIndex={stages.length}
             />
         </>
     );

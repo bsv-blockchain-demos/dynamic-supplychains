@@ -2,11 +2,14 @@
 
 import { useState } from "react";
 import { ActionChainStage } from "../../lib/mongo";
+import { ChainTemplate, StageTemplate } from "./createModalTemplates";
 
 interface CreateStageModalProps {
     isOpen: boolean;
     onClose: () => void;
     onSubmit: (stage: ActionChainStage) => void;
+    selectedTemplate?: ChainTemplate | null;
+    stageIndex?: number;
 }
 
 interface MetadataField {
@@ -15,12 +18,27 @@ interface MetadataField {
     value: string;
 }
 
-export const CreateStageModal = ({ isOpen, onClose, onSubmit }: CreateStageModalProps) => {
+export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, stageIndex = 0 }: CreateStageModalProps) => {
     const [title, setTitle] = useState("");
     const [metadataFields, setMetadataFields] = useState<MetadataField[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showTemplates, setShowTemplates] = useState(false);
+
+    // Get suggested stages from selected template
+    const suggestedStages = selectedTemplate?.stages || [];
 
     if (!isOpen) return null;
+
+    const applyTemplate = (stageTemplate: StageTemplate) => {
+        setTitle(stageTemplate.name);
+        const newFields: MetadataField[] = stageTemplate.keys.map((key, index) => ({
+            id: `${Date.now()}-${index}`,
+            key,
+            value: ""
+        }));
+        setMetadataFields(newFields);
+        setShowTemplates(false);
+    };
 
     const addMetadataField = () => {
         const newField: MetadataField = {
@@ -72,6 +90,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit }: CreateStageModal
         // Reset form and close modal
         setTitle("");
         setMetadataFields([]);
+        setShowTemplates(false);
         setIsSubmitting(false);
         onClose();
     };
@@ -80,6 +99,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit }: CreateStageModal
         if (e.target === e.currentTarget) {
             setMetadataFields([]);
             setTitle("");
+            setShowTemplates(false);
             onClose();
         }
     };
@@ -89,12 +109,13 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit }: CreateStageModal
             className="fixed inset-0 backdrop-blur-sm bg-black/30 flex items-center justify-center z-50 p-4"
             onClick={handleBackdropClick}
         >
-            <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6 relative animate-in fade-in zoom-in duration-200">
+            <div className="bg-white rounded-lg shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto p-6 relative animate-in fade-in zoom-in duration-200">
                 {/* Close button */}
                 <button
                     onClick={() => {
                         setMetadataFields([]);
                         setTitle("");
+                        setShowTemplates(false);
                         onClose();
                     }}
                     className="absolute top-4 right-4 text-gray-400 hover:text-gray-900 transition-colors cursor-pointer"
@@ -106,9 +127,43 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit }: CreateStageModal
                 </button>
 
                 {/* Modal Header */}
-                <h2 className="text-2xl font-bold text-black mb-6">
+                <h2 className="text-2xl font-bold text-black mb-4">
                     Create New Stage
                 </h2>
+
+                {/* Template Suggestions */}
+                {suggestedStages.length > 0 && (
+                    <div className="mb-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowTemplates(!showTemplates)}
+                            className="text-sm text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1 hover:cursor-pointer"
+                        >
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                            </svg>
+                            {showTemplates ? 'Hide' : 'Show'} Template Suggestions
+                        </button>
+                        
+                        {showTemplates && (
+                            <div className="mt-3 space-y-2 max-h-48 overflow-y-auto border border-gray-200 rounded-lg p-3 bg-gray-50">
+                                {suggestedStages.map((stageTemplate, index) => (
+                                    <button
+                                        key={index}
+                                        type="button"
+                                        onClick={() => applyTemplate(stageTemplate)}
+                                        className="w-full text-left px-3 py-2 bg-white hover:bg-blue-50 border border-gray-200 hover:border-blue-300 rounded-lg transition-colors text-sm hover:cursor-pointer"
+                                    >
+                                        <div className="font-medium text-black">{stageTemplate.name}</div>
+                                        <div className="text-xs text-gray-500 mt-1">
+                                            Fields: {stageTemplate.keys.join(", ")}
+                                        </div>
+                                    </button>
+                                ))}
+                            </div>
+                        )}
+                    </div>
+                )}
 
                 {/* Form */}
                 <form onSubmit={handleSubmit} className="space-y-4">
@@ -190,6 +245,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit }: CreateStageModal
                             onClick={() => {
                                 setMetadataFields([]);
                                 setTitle("");
+                                setShowTemplates(false);
                                 onClose();
                             }}
                             className="flex-1 px-4 py-2 border border-gray-300 text-black rounded-lg hover:bg-gray-100 transition-colors font-medium cursor-pointer"
