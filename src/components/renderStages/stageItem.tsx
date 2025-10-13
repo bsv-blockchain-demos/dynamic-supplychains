@@ -1,11 +1,21 @@
+'use client';
+
 import { ActionChainStage } from "../../lib/mongo";
 import Image from "next/image";
+import { useState } from "react";
+import { StageItemDetails } from "./stageItemDetails";
 
 export const StageItem = (props: { stage: ActionChainStage }) => {
     const { stage } = props;
+    const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <div className="w-full max-w-xl bg-white rounded-xl border-2 border-gray-300 overflow-hidden hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)] transition-all shadow-[6px_8px_16px_rgba(0,0,0,0.25)]">
+        <div className="w-full flex flex-row gap-4 items-start">
+            {/* Stage Card */}
+            <div 
+                onClick={() => setIsExpanded(!isExpanded)}
+                className="w-full max-w-xl bg-white rounded-xl border-2 border-gray-300 overflow-hidden hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)] transition-all shadow-[6px_8px_16px_rgba(0,0,0,0.25)] cursor-pointer hover:border-blue-400"
+            >
             {/* Stage Image */}
             <div className="relative h-64 bg-gradient-to-br from-blue-100 to-blue-50">
                 {/* Placeholder for stage illustration */}
@@ -41,6 +51,15 @@ export const StageItem = (props: { stage: ActionChainStage }) => {
                     </div>
                 </div>
             </div>
+            </div>
+
+            {/* Details Panel - shown when expanded */}
+            {isExpanded && (
+                <StageItemDetails 
+                    transactionId={stage.TransactionID}
+                    onClose={() => setIsExpanded(false)}
+                />
+            )}
         </div>
     );
 };

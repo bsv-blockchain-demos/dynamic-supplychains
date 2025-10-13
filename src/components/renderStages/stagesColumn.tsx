@@ -279,7 +279,10 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
 
                 {/* Render existing stages */}
                 {stages.map((stage, index) => (
-                    <StageItem key={`${stage.TransactionID}-${index}`} stage={stage} />
+                    <StageItem 
+                        key={`${stage.TransactionID}-${index}`} 
+                        stage={stage}
+                    />
                 ))}
 
                 {/* Add new stage card */}
