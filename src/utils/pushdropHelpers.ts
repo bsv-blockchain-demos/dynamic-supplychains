@@ -1,4 +1,4 @@
-import { PushDrop, WalletInterface, LockingScript, WalletProtocol, SymmetricKey } from "@bsv/sdk";
+import { PushDrop, WalletInterface, LockingScript, WalletProtocol, SymmetricKey, Utils, Hash } from "@bsv/sdk";
 
 const customInstructions = {
     protocolID: [0, 'supplychain'] as WalletProtocol,
@@ -15,7 +15,11 @@ export async function createPushdrop(wallet: WalletInterface, data: any): Promis
 
         // Encrypt the data using a symmetricKey
         // To decrypt the info you simply need the RECEIVER key, for our demo it's just self
-        const key = new SymmetricKey(RECEIVER);
+        // We hash the receiver because the key must be 32 bytes
+        const receiverBytes = Utils.toArray(RECEIVER, 'utf8');
+        const keyBytes = Hash.sha256(receiverBytes);
+        const key = new SymmetricKey(keyBytes);
+
         const jsonString = JSON.stringify(data);
         const encryptedString = key.encrypt(jsonString) as number[];
 
