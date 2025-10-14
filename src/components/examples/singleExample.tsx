@@ -70,7 +70,7 @@ export const SingleExample = ({ actionChainId }: SingleExampleProps) => {
                 <p className="text-blue-100 mb-6">{error || 'This action chain does not exist or is not finalized'}</p>
                 <button
                     onClick={() => router.push('/examples')}
-                    className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
+                    className="px-6 py-3 bg-blue-600 hover:bg-white hover:text-blue-900 text-white rounded-lg font-medium transition-colors hover:cursor-pointer"
                 >
                     ← Back to Examples
                 </button>
@@ -83,7 +83,7 @@ export const SingleExample = ({ actionChainId }: SingleExampleProps) => {
             {/* Back Button */}
             <button
                 onClick={() => router.push('/examples')}
-                className="mb-6 px-4 py-2 bg-blue-800 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors inline-flex items-center gap-2"
+                className="mb-6 px-4 py-2 bg-blue-800 hover:bg-white hover:text-blue-900 text-white rounded-lg font-medium transition-colors inline-flex items-center gap-2 hover:cursor-pointer"
             >
                 ← Back to Examples
             </button>

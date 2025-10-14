@@ -26,12 +26,12 @@ export const Navbar = () => {
                         <Link 
                             href="/examples" 
                             className={`font-medium transition-colors duration-200 ${
-                                pathname === '/examples' 
+                                pathname?.startsWith('/examples') 
                                     ? 'text-white border-b-2 border-blue-400 pb-1' 
                                     : 'text-white hover:text-blue-200'
                             }`}
                         >
-                            Example
+                            Examples
                         </Link>
                     </div>
 

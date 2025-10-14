@@ -12,7 +12,7 @@ import { ObjectId } from "mongodb";
  * - stage: ActionChainStage - The stage data (title, Timestamp, TransactionID)
  * - isFirst: boolean - Whether this is the first stage (creates new ActionChain)
  * - actionChainId?: string - Required if isFirst is false, the ID of the existing ActionChain
- * - chainTitle?: string - The title of the ActionChain (only used when isFirst is true)
+ * - chainTitle?: string - Optional title for the ActionChain (can be null/empty and updated later)
  */
 export async function POST(request: NextRequest) {
     try {
@@ -37,14 +37,22 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Convert Timestamp to Date object if it's a string
+        const normalizedStage = {
+            ...stage,
+            Timestamp: stage.Timestamp instanceof Date ? stage.Timestamp : new Date(stage.Timestamp)
+        };
+
         if (isFirst) {
             // Create new ActionChain with the first stage
             const newActionChain = {
                 userId,
-                title: chainTitle || 'Untitled Chain',
-                stages: [stage],
+                title: chainTitle || null,
+                stages: [normalizedStage],
                 createdAt: new Date(),
                 updatedAt: new Date(),
+                finalized: false,
+                finalizedAt: null,
             };
 
             const result = await actionChainCollection.insertOne(newActionChain as any);
@@ -63,11 +71,17 @@ export async function POST(request: NextRequest) {
                 );
             }
 
+            // Build update object - update title if provided
+            const updateFields: any = { updatedAt: new Date() };
+            if (chainTitle !== undefined) {
+                updateFields.title = chainTitle;
+            }
+
             const result = await actionChainCollection.updateOne(
                 { _id: new ObjectId(actionChainId), userId },
                 {
-                    $push: { stages: stage },
-                    $set: { updatedAt: new Date() }
+                    $push: { stages: normalizedStage },
+                    $set: updateFields
                 }
             );
 

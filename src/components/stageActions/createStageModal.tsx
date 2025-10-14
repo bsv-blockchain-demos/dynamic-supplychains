@@ -20,6 +20,7 @@ interface MetadataField {
 
 export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, stageIndex = 0 }: CreateStageModalProps) => {
     const [title, setTitle] = useState("");
+    const [imageURL, setImageURL] = useState("");
     const [metadataFields, setMetadataFields] = useState<MetadataField[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showTemplates, setShowTemplates] = useState(false);
@@ -63,10 +64,13 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
         e.preventDefault();
         setIsSubmitting(true);
 
-        // Convert metadata fields to JSON object and include title
+        // Convert metadata fields to JSON object and include title and imageURL
         const metadataObject: Record<string, string> = {
             title: title
         };
+        if (imageURL) {
+            metadataObject.imageURL = imageURL;
+        }
         metadataFields.forEach(field => {
             if (field.key && field.value) {
                 metadataObject[field.key] = field.value;
@@ -78,6 +82,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
 
         // Reset form and close modal
         setTitle("");
+        setImageURL("");
         setMetadataFields([]);
         setShowTemplates(false);
         setIsSubmitting(false);
@@ -88,6 +93,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
         if (e.target === e.currentTarget) {
             setMetadataFields([]);
             setTitle("");
+            setImageURL("");
             setShowTemplates(false);
             onClose();
         }
@@ -104,6 +110,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                     onClick={() => {
                         setMetadataFields([]);
                         setTitle("");
+                        setImageURL("");
                         setShowTemplates(false);
                         onClose();
                     }}
@@ -172,6 +179,21 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                         />
                     </div>
 
+                    {/* Image URL */}
+                    <div>
+                        <label htmlFor="imageURL" className="block text-sm font-medium text-black mb-2">
+                            Image URL <span className="text-gray-400 font-normal">(optional)</span>
+                        </label>
+                        <input
+                            id="imageURL"
+                            type="url"
+                            value={imageURL}
+                            onChange={(e) => setImageURL(e.target.value)}
+                            placeholder="https://example.com/image.jpg"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black"
+                        />
+                    </div>
+
                     {/* Stage Metadata */}
                     <div>
                         <div className="flex justify-between items-center mb-3">
@@ -234,6 +256,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                             onClick={() => {
                                 setMetadataFields([]);
                                 setTitle("");
+                                setImageURL("");
                                 setShowTemplates(false);
                                 onClose();
                             }}

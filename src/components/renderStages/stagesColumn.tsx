@@ -80,6 +80,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
         // Create new stage object
         const newStage: ActionChainStage = {
             title: data.title,
+            imageURL: data.imageURL,
             Timestamp: new Date(),
             TransactionID: txid,
         };
@@ -148,6 +149,11 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             return;
         }
 
+        if (!chainTitle || chainTitle.trim() === '') {
+            toast.error('Please add an Action Chain Title before finalizing');
+            return;
+        }
+
         setIsFinalizing(true);
         try {
             const response = await fetch('/api/stages/finalize', {
@@ -156,6 +162,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 body: JSON.stringify({
                     userId: userPubKey,
                     actionChainId,
+                    chainTitle,
                 }),
             });
 
@@ -265,15 +272,21 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     <div className="w-full max-w-xl">
                         <button
                             onClick={handleFinalizeChain}
-                            disabled={isFinalizing}
-                            className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-green-400 text-white rounded-lg font-bold text-lg transition-colors shadow-lg hover:shadow-xl disabled:cursor-not-allowed flex items-center justify-center gap-3"
+                            disabled={isFinalizing || !chainTitle || chainTitle.trim() === ''}
+                            className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:opacity-60 text-white rounded-lg font-bold text-lg transition-colors shadow-lg hover:shadow-xl disabled:cursor-not-allowed hover:cursor-pointer flex items-center justify-center gap-3"
                         >
                             {isFinalizing && <Spinner size="sm" />}
                             {isFinalizing ? 'Finalizing...' : `✓ Finalize Action Chain (${stages.length} stages)`}
                         </button>
-                        <p className="text-xs text-blue-200 mt-2 text-center">
-                            This will complete and submit your action chain to the blockchain
-                        </p>
+                        {(!chainTitle || chainTitle.trim() === '') ? (
+                            <p className="text-xs text-yellow-300 mt-2 text-center font-medium">
+                                ⚠️ Please add an Action Chain Title above to finalize
+                            </p>
+                        ) : (
+                            <p className="text-xs text-blue-200 mt-2 text-center">
+                                This will complete and submit your action chain to the blockchain
+                            </p>
+                        )}
                     </div>
                 )}
 

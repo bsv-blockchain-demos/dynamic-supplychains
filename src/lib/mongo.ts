@@ -6,6 +6,7 @@ import { actionChainValidator, locksValidator } from "../utils/mongoValidators";
 // Action-chain stage with txid including the pushdrop information
 export interface ActionChainStage {
     title?: string;
+    imageURL?: string;
     Timestamp: Date;
     TransactionID: string;
 }
@@ -111,8 +112,9 @@ async function connectToMongo() {
                     unique: true,
                     partialFilterExpression: {
                         $and: [
+                            { "stages.TransactionID": { $exists: true } },
                             { "stages.TransactionID": { $type: "string" } },
-                            { "stages.TransactionID": { $ne: "" } },
+                            { "stages.TransactionID": { $gt: "" } },
                         ],
                     },
                 }

@@ -6,11 +6,14 @@ export const actionChainValidator = {
     properties: {
       _id: {}, // created by Mongo
       userId: { bsonType: "string" },
+      title: { bsonType: ["string", "null"] },
       createdAt: { bsonType: ["date", "null"] },
       updatedAt: { bsonType: ["date", "null"] },
+      finalized: { bsonType: ["bool", "null"] },
+      finalizedAt: { bsonType: ["date", "null"] },
       stages: {
         bsonType: "array",
-        minItems: 2,
+        minItems: 1,
         maxItems: 8,
         items: {
           bsonType: "object",
@@ -19,6 +22,7 @@ export const actionChainValidator = {
           properties: {
             // Prefer a normalized title, but allow projects that provide dynamic keys (e.g., stage1Title)
             title: { bsonType: "string" },
+            imageURL: { bsonType: "string" },
             Timestamp: { bsonType: "date" },
             TransactionID: { bsonType: "string" },
           },

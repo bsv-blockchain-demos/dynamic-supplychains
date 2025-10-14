@@ -52,13 +52,13 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
     }, [transactionId]);
 
     return (
-        <div className="w-80 bg-white rounded-xl border-2 border-blue-300 shadow-lg p-6 animate-in slide-in-from-right">
+        <div className="w-80 bg-white rounded-xl border-2 border-blue-300 shadow-lg p-6 animate-in fade-in duration-200">
             {/* Header */}
             <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-bold text-gray-900">Stage Details</h3>
                 <button
                     onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100"
+                    className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100 hover:cursor-pointer"
                 >
                     <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />

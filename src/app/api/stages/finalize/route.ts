@@ -6,22 +6,32 @@ import { ObjectId } from "mongodb";
  * POST /api/stages/finalize
  * 
  * Finalizes an ActionChain and removes the user's lock
+ * Updates the title if provided, then finalizes the chain
  * 
  * Request body:
  * - userId: string - The user finalizing the chain
  * - actionChainId: string - The ActionChain ID to finalize
+ * - chainTitle?: string - Optional title to update before finalizing
  */
 export async function POST(request: NextRequest) {
     try {
         const { actionChainCollection, locksCollection } = await connectToMongo();
         const body = await request.json();
         
-        const { userId, actionChainId } = body;
+        const { userId, actionChainId, chainTitle } = body;
 
         // Validate required fields
         if (!userId || !actionChainId) {
             return NextResponse.json(
                 { error: "Missing required fields: userId, actionChainId" },
+                { status: 400 }
+            );
+        }
+
+        // Validate title is provided
+        if (!chainTitle || chainTitle.trim() === '') {
+            return NextResponse.json(
+                { error: "ActionChain must have a title before finalizing" },
                 { status: 400 }
             );
         }
@@ -52,10 +62,16 @@ export async function POST(request: NextRequest) {
             );
         }
 
-        // Mark the ActionChain as finalized
+        // Update title and mark the ActionChain as finalized
         await actionChainCollection.updateOne(
             { _id: new ObjectId(actionChainId) },
-            { $set: { finalized: true, finalizedAt: new Date() } }
+            { 
+                $set: { 
+                    title: chainTitle,
+                    finalized: true, 
+                    finalizedAt: new Date() 
+                } 
+            }
         );
 
         // Remove the lock
