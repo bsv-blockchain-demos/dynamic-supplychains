@@ -2,7 +2,7 @@
 
 import { Utils, Hash, SymmetricKey, Transaction } from "@bsv/sdk";
 import { getTransactionByTxid } from "../../utils/overlayFunctions";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 
 interface StageItemDetailsProps {
     transactionId: string;
@@ -14,42 +14,47 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchData = async () => {
-            setIsLoading(true);
-            setError(null);
-            const RECEIVER = "self";
-            try {
-                // Overlay fetch
-                const overlayData = await getTransactionByTxid(transactionId);
+    const fetchData = useCallback(async () => {
+        setIsLoading(true);
+        setError(null);
+        const RECEIVER = "self";
+        try {
+            // Overlay fetch
+            const overlayData = await getTransactionByTxid(transactionId);
 
-                // Derive the same 32-byte key from "self" using SHA-256 hash
-                const receiverBytes = Utils.toArray(RECEIVER, 'utf8');
-                const keyBytes = Hash.sha256(receiverBytes);
-                const key = new SymmetricKey(keyBytes);
-
-                // Get the actual encryptedData from the pushdrop transaction
-                const transaction = Transaction.fromBEEF(overlayData.outputs[0].beef);
-                // When using pushdrop the data is stored in the lockingScript chunk 0
-                const encryptedData = transaction.outputs[0].lockingScript.chunks[0].data as number[];
-
-                // Decrypt the data
-                const decryptedData = key.decrypt(encryptedData) as number[];
-                const decryptedString = Utils.toUTF8(decryptedData);
-
-                // Parse back to object
-                const decryptedObject = JSON.parse(decryptedString);
-
-                setData(decryptedObject);
-            } catch (err) {
-                setError(err instanceof Error ? err.message : "Failed to fetch data");
-            } finally {
-                setIsLoading(false);
+            if (!overlayData || !overlayData.outputs || !overlayData.outputs[0] || !overlayData.outputs[0].beef) {
+                throw new Error("Transaction not found in overlay. It may still be broadcasting or failed to broadcast.");
             }
-        };
 
-        fetchData();
+            // Derive the same 32-byte key from "self" using SHA-256 hash
+            const receiverBytes = Utils.toArray(RECEIVER, 'utf8');
+            const keyBytes = Hash.sha256(receiverBytes);
+            const key = new SymmetricKey(keyBytes);
+
+            // Get the actual encryptedData from the pushdrop transaction
+            const transaction = Transaction.fromBEEF(overlayData.outputs[0].beef);
+            // When using pushdrop the data is stored in the lockingScript chunk 0
+            const encryptedData = transaction.outputs[0].lockingScript.chunks[0].data as number[];
+
+            // Decrypt the data
+            const decryptedData = key.decrypt(encryptedData) as number[];
+            const decryptedString = Utils.toUTF8(decryptedData);
+
+            // Parse back to object
+            const decryptedObject = JSON.parse(decryptedString);
+
+            setData(decryptedObject);
+        } catch (err) {
+            console.error("Error fetching stage details:", err);
+            setError(err instanceof Error ? err.message : "Failed to fetch data");
+        } finally {
+            setIsLoading(false);
+        }
     }, [transactionId]);
+
+    useEffect(() => {
+        fetchData();
+    }, [fetchData]);
 
     return (
         <div className="w-80 bg-white rounded-xl border-2 border-blue-300 shadow-lg p-6 animate-in fade-in duration-200">
@@ -83,7 +88,13 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
 
                 {error && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-3">
-                        <p className="text-sm text-red-600">{error}</p>
+                        <p className="text-sm text-red-600 mb-2">{error}</p>
+                        <button
+                            onClick={fetchData}
+                            className="text-xs text-blue-600 hover:text-blue-700 font-medium hover:underline hover:cursor-pointer"
+                        >
+                            🔄 Retry
+                        </button>
                     </div>
                 )}
 

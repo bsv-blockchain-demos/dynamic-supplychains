@@ -54,6 +54,7 @@ export const StageItem = (props: { stage: ActionChainStage }) => {
                 {isExpanded && (
                     <div className="absolute left-[calc(100%+1rem)] top-0 z-10">
                         <StageItemDetails 
+                            key={stage.TransactionID}
                             transactionId={stage.TransactionID}
                             onClose={() => setIsExpanded(false)}
                         />

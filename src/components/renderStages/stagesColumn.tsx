@@ -23,6 +23,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     const [actionChainId, setActionChainId] = useState<string | null>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [isFinalizing, setIsFinalizing] = useState(false);
+    const [isBroadcasting, setIsBroadcasting] = useState(false);
 
     const { userWallet, userPubKey } = useWalletContext();
 
@@ -70,9 +71,11 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
         }
 
         // TransactionID will come from the wallet create pushdrop
-        const txid = await createPushdropToken(userWallet, data, isFirst, lastStage);
+        setIsBroadcasting(true);
+        const txid = await createPushdropToken(userWallet, data, isFirst, lastStage, setIsBroadcasting);
 
         if (!txid) {
+            setIsBroadcasting(false);
             toast.error('Failed to create pushdrop token');
             throw new Error("Failed to create pushdrop token");
         }
@@ -298,12 +301,12 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     />
                 ))}
 
-                {/* Add new stage card */}
-                {!isMaxReached ? (
+                {/* Add New Stage Card */}
+                {stages.length < MAX_STAGES ? (
                     <div
                         onClick={() => {
                             if (!userWallet) {
-                                toast.error('Please connect your wallet to add stages');
+                                toast.error('Please connect your wallet first');
                                 return;
                             }
                             setIsModalOpen(true);
@@ -360,12 +363,19 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 onSubmit={handleAddStage}
                 selectedTemplate={selectedTemplate}
                 stageIndex={stages.length}
+                isBroadcasting={isBroadcasting}
             />
         </>
     );
 };
 
-async function createPushdropToken(userWallet: WalletClient, data: Record<string, string>, isFirst: boolean, lastStage: ActionChainStage | null) {
+async function createPushdropToken(
+    userWallet: WalletClient, 
+    data: Record<string, string>, 
+    isFirst: boolean, 
+    lastStage: ActionChainStage | null,
+    setIsBroadcasting: (value: boolean) => void
+) {
     // If it's the first stage, we only have to create an output
     if (isFirst) {
         try {
@@ -390,8 +400,20 @@ async function createPushdropToken(userWallet: WalletClient, data: Record<string
 
             const tx = Transaction.fromBEEF(pushDropAction.tx as number[]);
 
-            const broadcastResponse = await broadcastTransaction(tx);
-            console.log("Broadcast response: ", broadcastResponse);
+            // Broadcast in background without blocking
+            (async () => {
+                try {
+                    const response = await broadcastTransaction(tx);
+                    console.log("Broadcast response: ", response);
+                    toast.success("Transaction broadcasted successfully");
+                    setIsBroadcasting(false);
+                } catch (error) {
+                    console.error("Broadcast failed:", error);
+                    toast.error("Warning: Transaction created but broadcast failed");
+                    setIsBroadcasting(false);
+                }
+            })();
+
             return pushDropAction.txid;
         } catch (error) {
             console.error("Error creating pushdrop token:", error);
@@ -457,8 +479,20 @@ async function createPushdropToken(userWallet: WalletClient, data: Record<string
 
             const tx = Transaction.fromBEEF(pushDropAction.tx as number[]);
 
-            const broadcastResponse = await broadcastTransaction(tx);
-            console.log("Broadcast response: ", broadcastResponse);
+            // Broadcast in background without blocking
+            (async () => {
+                try {
+                    const response = await broadcastTransaction(tx);
+                    console.log("Broadcast response: ", response);
+                    toast.success("Transaction broadcasted successfully");
+                    setIsBroadcasting(false);
+                } catch (error) {
+                    console.error("Broadcast failed:", error);
+                    toast.error("Warning: Transaction created but broadcast failed");
+                    setIsBroadcasting(false);
+                }
+            })();
+
             return pushDropAction.txid;
         } catch (error) {
             console.error("Error creating pushdrop token:", error);

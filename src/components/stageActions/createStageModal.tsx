@@ -10,6 +10,7 @@ interface CreateStageModalProps {
     onSubmit: (stage: Record<string, string>) => void;
     selectedTemplate?: ChainTemplate | null;
     stageIndex?: number;
+    isBroadcasting?: boolean;
 }
 
 interface MetadataField {
@@ -18,7 +19,7 @@ interface MetadataField {
     value: string;
 }
 
-export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, stageIndex = 0 }: CreateStageModalProps) => {
+export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, stageIndex = 0, isBroadcasting = false }: CreateStageModalProps) => {
     const [title, setTitle] = useState("");
     const [imageURL, setImageURL] = useState("");
     const [metadataFields, setMetadataFields] = useState<MetadataField[]>([]);
@@ -250,29 +251,36 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                     </div>
 
                     {/* Action Buttons */}
-                    <div className="flex gap-3 pt-4">
-                        <button
-                            type="button"
-                            onClick={() => {
-                                setMetadataFields([]);
-                                setTitle("");
-                                setImageURL("");
-                                setShowTemplates(false);
-                                onClose();
-                            }}
-                            className="flex-1 px-4 py-2 border border-gray-300 text-black rounded-lg hover:bg-gray-100 transition-colors font-medium cursor-pointer"
-                            disabled={isSubmitting}
-                        >
-                            Cancel
-                        </button>
-                        <button
-                            type="submit"
-                            className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
-                            disabled={isSubmitting}
-                        >
-                            {isSubmitting && <Spinner size="sm" />}
-                            {isSubmitting ? "Creating..." : "Create Stage"}
-                        </button>
+                    <div className="flex flex-col gap-2 pt-4">
+                        <div className="flex gap-3">
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setMetadataFields([]);
+                                    setTitle("");
+                                    setImageURL("");
+                                    setShowTemplates(false);
+                                    onClose();
+                                }}
+                                className="flex-1 px-4 py-2 border border-gray-300 text-black rounded-lg hover:bg-gray-100 transition-colors font-medium cursor-pointer"
+                                disabled={isSubmitting}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
+                                disabled={isSubmitting || isBroadcasting}
+                            >
+                                {isSubmitting && <Spinner size="sm" />}
+                                {isSubmitting ? "Creating..." : "Create Stage"}
+                            </button>
+                        </div>
+                        {isBroadcasting && (
+                            <p className="text-xs text-yellow-600 text-center font-medium">
+                                ⏳ Waiting for previous transaction to broadcast...
+                            </p>
+                        )}
                     </div>
                 </form>
             </div>
