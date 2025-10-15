@@ -405,6 +405,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 selectedTemplate={selectedTemplate}
                 stageIndex={stages.length}
                 isBroadcasting={isBroadcasting}
+                chainTitle={chainTitle}
             />
         </>
     );

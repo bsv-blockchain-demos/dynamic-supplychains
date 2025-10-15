@@ -11,6 +11,7 @@ interface CreateStageModalProps {
     selectedTemplate?: ChainTemplate | null;
     stageIndex?: number;
     isBroadcasting?: boolean;
+    chainTitle?: string; // Required to validate receiver sending
 }
 
 interface MetadataField {
@@ -19,7 +20,7 @@ interface MetadataField {
     value: string;
 }
 
-export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, stageIndex = 0, isBroadcasting = false }: CreateStageModalProps) => {
+export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, stageIndex = 0, isBroadcasting = false, chainTitle = '' }: CreateStageModalProps) => {
     const [title, setTitle] = useState("");
     const [imageURL, setImageURL] = useState("");
     const [receiverPubKey, setReceiverPubKey] = useState("");
@@ -296,7 +297,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                             <button
                                 type="submit"
                                 className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
-                                disabled={isSubmitting || isBroadcasting}
+                                disabled={isSubmitting || isBroadcasting || (receiverPubKey.trim().length > 0 && chainTitle.trim().length === 0)}
                             >
                                 {isSubmitting && <Spinner size="sm" />}
                                 {isSubmitting ? "Creating..." : "Create Stage"}
@@ -305,6 +306,11 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                         {isBroadcasting && (
                             <p className="text-xs text-yellow-600 text-center font-medium">
                                 ⏳ Waiting for previous transaction to broadcast...
+                            </p>
+                        )}
+                        {receiverPubKey.trim() && !chainTitle.trim() && (
+                            <p className="text-xs text-red-600 text-center font-medium">
+                                ⚠️ You must add an Action Chain Title above to send to another user
                             </p>
                         )}
                     </div>

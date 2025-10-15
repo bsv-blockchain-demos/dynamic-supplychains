@@ -127,6 +127,24 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                     });
                 }
             } else {
+                // No receiver specified - locked to self, create a lock for the user
+                try {
+                    const lockResponse = await fetch('/api/lock', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            userId: userPubKey,
+                            actionChainId: chain.actionChainId,
+                        }),
+                    });
+
+                    if (!lockResponse.ok) {
+                        console.warn('Failed to create lock for continued chain');
+                    }
+                } catch (error) {
+                    console.error('Error creating lock:', error);
+                }
+
                 toast.success(`Stage "${data.title}" added successfully! Chain continued.`, {
                     duration: 5000,
                     icon: '✅',
@@ -378,6 +396,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                 selectedTemplate={selectedTemplate}
                 stageIndex={stages.length}
                 isBroadcasting={isBroadcasting}
+                chainTitle={chain.title || ''}
             />
         </>
     );
