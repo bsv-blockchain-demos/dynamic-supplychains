@@ -24,6 +24,16 @@ export const Navbar = () => {
                             Create
                         </Link>
                         <Link 
+                            href="/receive" 
+                            className={`font-medium transition-colors duration-200 ${
+                                pathname?.startsWith('/receive') 
+                                    ? 'text-white border-b-2 border-blue-400 pb-1' 
+                                    : 'text-white hover:text-blue-200'
+                            }`}
+                        >
+                            Receive
+                        </Link>
+                        <Link 
                             href="/examples" 
                             className={`font-medium transition-colors duration-200 ${
                                 pathname?.startsWith('/examples') 

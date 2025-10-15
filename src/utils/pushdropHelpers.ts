@@ -6,15 +6,17 @@ const customInstructions = {
 };
 
 // Receiver is the public key the pushdrop will be send to (the next stage) counterparty
-// In this demo we only use our own wallet so we use "self"
-// For a real supply-chain application simply change RECEIVER to the public key of the next stage and change forSelf to false
+// If receiverPubKey is provided, the pushdrop will be locked to that key
+// Otherwise it defaults to "self" (your own wallet)
 
-export async function createPushdrop(wallet: WalletInterface, data: any): Promise<LockingScript> {
+export async function createPushdrop(wallet: WalletInterface, data: any, receiverPubKey?: string): Promise<LockingScript> {
     try {
-        const RECEIVER = "self";
+        // Use provided receiver or fallback to "self"
+        const RECEIVER = receiverPubKey || "self";
+        const forSelf = !receiverPubKey; // If no receiver provided, it's for self
 
         // Encrypt the data using a symmetricKey
-        // To decrypt the info you simply need the RECEIVER key, for our demo it's just self
+        // To decrypt the info you simply need the RECEIVER key
         // We hash the receiver because the key must be 32 bytes
         const receiverBytes = Utils.toArray(RECEIVER, 'utf8');
         const keyBytes = Hash.sha256(receiverBytes);
@@ -30,7 +32,7 @@ export async function createPushdrop(wallet: WalletInterface, data: any): Promis
             customInstructions.protocolID,
             customInstructions.keyID,
             RECEIVER, // Counterparty
-            true, // forSelf?
+            forSelf, // forSelf? - true if keeping for self, false if sending to someone
             true, // IncludeSig?
             'after'
         );
@@ -42,9 +44,12 @@ export async function createPushdrop(wallet: WalletInterface, data: any): Promis
 }
 
 // Will require a preimage transaction to sign to get the actual unlockingScript
-export async function unlockPushdrop(wallet: WalletInterface) {
+// If receiverPubKey is provided, it means we're unlocking a token that was sent to us
+// Otherwise, we're unlocking our own token (self)
+export async function unlockPushdrop(wallet: WalletInterface, receiverPubKey?: string) {
     try {
-        const RECEIVER = "self";
+        // Use provided receiver or fallback to "self"
+        const RECEIVER = receiverPubKey || "self";
 
         // Unlock a pushdrop token
         const pushdrop = new PushDrop(wallet);

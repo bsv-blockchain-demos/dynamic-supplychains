@@ -31,6 +31,17 @@ export interface ActionLock {
     createdAt: Date;
 }
 
+// Chain transfer record - tracks chains sent from one user to another
+export interface ChainTransfer {
+    _id: ObjectId;
+    actionChainId: ObjectId;
+    senderPubKey: string;
+    receiverPubKey: string;
+    sentAt: Date;
+    continued: boolean; // Has the receiver continued the chain?
+    continuedAt?: Date | null;
+}
+
 // Mongo ENVs
 const uri = process.env.MONGODB_URI as string;
 const clusterName = process.env.MONGODB_CLUSTER_NAME as string;
@@ -48,6 +59,7 @@ const client = new MongoClient(uri, {
 let db: Db;
 let actionChainCollection: Collection<ActionChain>;
 let locksCollection: Collection<ActionLock>;
+let chainTransfersCollection: Collection<ChainTransfer>;
 
 // Connect to MongoDB
 async function connectToMongo() {
@@ -101,6 +113,7 @@ async function connectToMongo() {
             // Get typed collection handles
             actionChainCollection = db.collection("actionChain");
             locksCollection = db.collection("action_locks");
+            chainTransfersCollection = db.collection("chain_transfers");
 
             // Create indexes for better performance
             await actionChainCollection.createIndex({ "_id": 1 });
@@ -129,13 +142,18 @@ async function connectToMongo() {
                 }
             );
 
+            // Create indexes for chain transfers
+            await chainTransfersCollection.createIndex({ receiverPubKey: 1, sentAt: -1 });
+            await chainTransfersCollection.createIndex({ actionChainId: 1 });
+            await chainTransfersCollection.createIndex({ senderPubKey: 1, sentAt: -1 });
+
             console.log("MongoDB indexes created successfully");
         } catch (error) {
             console.error("Error connecting to MongoDB:", error);
             throw error;
         }
     }
-    return { db, actionChainCollection, locksCollection };
+    return { db, actionChainCollection, locksCollection, chainTransfersCollection };
 }
 
 // Connect immediately when this module is imported
@@ -153,4 +171,4 @@ process.on('SIGINT', async () => {
     }
 });
 
-export { connectToMongo, actionChainCollection, locksCollection };
+export { connectToMongo, actionChainCollection, locksCollection, chainTransfersCollection };

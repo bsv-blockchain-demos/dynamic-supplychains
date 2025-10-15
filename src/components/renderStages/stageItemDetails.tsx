@@ -17,33 +17,58 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
     const fetchData = useCallback(async () => {
         setIsLoading(true);
         setError(null);
-        const RECEIVER = "self";
         try {
-            // Overlay fetch
+            // First, fetch the receiver information from the chainTransfers collection
+            const receiverResponse = await fetch(`/api/chains/receiver?transactionId=${encodeURIComponent(transactionId)}`);
+            const receiverData = await receiverResponse.json();
+            
+            const receiverKey = receiverData.receiver || "self";
+            const receiverDisplay = receiverKey === "self" 
+                ? "Self (your wallet)" 
+                : receiverKey;
+
+            // Fetch the transaction from overlay
             const overlayData = await getTransactionByTxid(transactionId);
 
             if (!overlayData || !overlayData.outputs || !overlayData.outputs[0] || !overlayData.outputs[0].beef) {
                 throw new Error("Transaction not found in overlay. It may still be broadcasting or failed to broadcast.");
             }
 
-            // Derive the same 32-byte key from "self" using SHA-256 hash
-            const receiverBytes = Utils.toArray(RECEIVER, 'utf8');
-            const keyBytes = Hash.sha256(receiverBytes);
-            const key = new SymmetricKey(keyBytes);
-
-            // Get the actual encryptedData from the pushdrop transaction
+            // Get the transaction and extract encrypted data
             const transaction = Transaction.fromBEEF(overlayData.outputs[0].beef);
+            const lockingScript = transaction.outputs[0].lockingScript;
+            
+            // Get the encryptedData from the pushdrop transaction
             // When using pushdrop the data is stored in the lockingScript chunk 0
-            const encryptedData = transaction.outputs[0].lockingScript.chunks[0].data as number[];
+            const encryptedData = lockingScript.chunks[0].data as number[];
 
-            // Decrypt the data
-            const decryptedData = key.decrypt(encryptedData) as number[];
-            const decryptedString = Utils.toUTF8(decryptedData);
+            // Try to decrypt with the receiver key
+            let decryptedObject: any = null;
+            let decryptionError = null;
+            
+            try {
+                // Use the receiver key we got from the API
+                const receiverBytes = Utils.toArray(receiverKey, 'utf8');
+                const keyBytes = Hash.sha256(receiverBytes);
+                const key = new SymmetricKey(keyBytes);
+                
+                const decryptedData = key.decrypt(encryptedData) as number[];
+                const decryptedString = Utils.toUTF8(decryptedData);
+                decryptedObject = JSON.parse(decryptedString);
+            } catch (err) {
+                decryptionError = "Unable to decrypt (may be locked to another receiver)";
+                console.log("Decryption failed for receiver:", receiverDisplay);
+            }
 
-            // Parse back to object
-            const decryptedObject = JSON.parse(decryptedString);
-
-            setData(decryptedObject);
+            setData({
+                ...decryptedObject,
+                _metadata: {
+                    receiver: receiverDisplay,
+                    canDecrypt: decryptedObject !== null,
+                    decryptionError: decryptionError,
+                    sender: receiverData.sender
+                }
+            });
         } catch (err) {
             console.error("Error fetching stage details:", err);
             setError(err instanceof Error ? err.message : "Failed to fetch data");
@@ -99,12 +124,58 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
                 )}
 
                 {!isLoading && !error && data && (
-                    <div>
-                        <p className="text-xs text-gray-500 font-medium mb-2">Decrypted Data</p>
-                        <pre className="text-xs text-gray-900 bg-gray-50 p-3 rounded overflow-auto max-h-96 border border-gray-200">
-                            {JSON.stringify(data, null, 2)}
-                        </pre>
-                    </div>
+                    <>
+                        {/* Receiver Information */}
+                        {data._metadata && (
+                            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 space-y-2">
+                                <div>
+                                    <p className="text-xs text-gray-600 font-medium mb-1">Locked to Receiver:</p>
+                                    <p className="text-xs text-gray-900 break-all font-mono">
+                                        {data._metadata.receiver === "Self (your wallet)" ? (
+                                            <span className="text-green-700 font-semibold">
+                                                🔓 {data._metadata.receiver}
+                                            </span>
+                                        ) : (
+                                            <span className="text-blue-700">
+                                                🔒 {data._metadata.receiver.slice(0, 12)}...{data._metadata.receiver.slice(-8)}
+                                            </span>
+                                        )}
+                                    </p>
+                                </div>
+                                {data._metadata.sender && (
+                                    <div>
+                                        <p className="text-xs text-gray-600 font-medium mb-1">Sent by:</p>
+                                        <p className="text-xs text-gray-700 break-all font-mono">
+                                            📤 {data._metadata.sender.slice(0, 12)}...{data._metadata.sender.slice(-8)}
+                                        </p>
+                                    </div>
+                                )}
+                                {!data._metadata.canDecrypt && (
+                                    <div className="bg-yellow-50 border border-yellow-300 rounded p-2">
+                                        <p className="text-xs text-yellow-800">
+                                            ⚠️ {data._metadata.decryptionError}
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Decrypted Data */}
+                        {data._metadata?.canDecrypt !== false && (
+                            <div>
+                                <p className="text-xs text-gray-500 font-medium mb-2">Decrypted Data</p>
+                                <pre className="text-xs text-gray-900 bg-gray-50 p-3 rounded overflow-auto max-h-96 border border-gray-200">
+                                    {JSON.stringify(
+                                        Object.fromEntries(
+                                            Object.entries(data).filter(([key]) => key !== '_metadata')
+                                        ),
+                                        null,
+                                        2
+                                    )}
+                                </pre>
+                            </div>
+                        )}
+                    </>
                 )}
             </div>
         </div>

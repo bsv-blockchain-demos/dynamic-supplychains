@@ -22,6 +22,7 @@ interface MetadataField {
 export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, stageIndex = 0, isBroadcasting = false }: CreateStageModalProps) => {
     const [title, setTitle] = useState("");
     const [imageURL, setImageURL] = useState("");
+    const [receiverPubKey, setReceiverPubKey] = useState("");
     const [metadataFields, setMetadataFields] = useState<MetadataField[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showTemplates, setShowTemplates] = useState(false);
@@ -72,6 +73,9 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
         if (imageURL) {
             metadataObject.imageURL = imageURL;
         }
+        if (receiverPubKey && receiverPubKey.trim()) {
+            metadataObject.receiverPubKey = receiverPubKey.trim();
+        }
         metadataFields.forEach(field => {
             if (field.key && field.value) {
                 metadataObject[field.key] = field.value;
@@ -84,6 +88,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
         // Reset form and close modal
         setTitle("");
         setImageURL("");
+        setReceiverPubKey("");
         setMetadataFields([]);
         setShowTemplates(false);
         setIsSubmitting(false);
@@ -95,6 +100,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
             setMetadataFields([]);
             setTitle("");
             setImageURL("");
+            setReceiverPubKey("");
             setShowTemplates(false);
             onClose();
         }
@@ -112,6 +118,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                         setMetadataFields([]);
                         setTitle("");
                         setImageURL("");
+                        setReceiverPubKey("");
                         setShowTemplates(false);
                         onClose();
                     }}
@@ -195,6 +202,24 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                         />
                     </div>
 
+                    {/* Receiver Public Key */}
+                    <div>
+                        <label htmlFor="receiverPubKey" className="block text-sm font-medium text-black mb-2">
+                            Receiver Public Key <span className="text-gray-400 font-normal">(optional - leave empty to keep for yourself)</span>
+                        </label>
+                        <input
+                            id="receiverPubKey"
+                            type="text"
+                            value={receiverPubKey}
+                            onChange={(e) => setReceiverPubKey(e.target.value)}
+                            placeholder="Enter receiver's public key to send this stage"
+                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black font-mono text-sm"
+                        />
+                        <p className="text-xs text-gray-500 mt-1">
+                            💡 If provided, this stage will be locked to the receiver's key on the blockchain
+                        </p>
+                    </div>
+
                     {/* Stage Metadata */}
                     <div>
                         <div className="flex justify-between items-center mb-3">
@@ -259,6 +284,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                                     setMetadataFields([]);
                                     setTitle("");
                                     setImageURL("");
+                                    setReceiverPubKey("");
                                     setShowTemplates(false);
                                     onClose();
                                 }}

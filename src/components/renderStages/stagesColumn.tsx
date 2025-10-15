@@ -70,9 +70,12 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             throw new Error("User public key not found");
         }
 
+        // Extract receiver if provided
+        const receiverPubKey = data.receiverPubKey;
+        
         // TransactionID will come from the wallet create pushdrop
         setIsBroadcasting(true);
-        const txid = await createPushdropToken(userWallet, data, isFirst, lastStage, setIsBroadcasting);
+        const txid = await createPushdropToken(userWallet, data, isFirst, lastStage, receiverPubKey, setIsBroadcasting);
 
         if (!txid) {
             setIsBroadcasting(false);
@@ -129,7 +132,35 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             }
 
             console.log('Stage saved successfully:', result);
-            toast.success(`Stage "${data.title}" added successfully!`);
+            
+            // If a receiver was specified, create a ChainTransfer record
+            if (receiverPubKey && actionChainId) {
+                try {
+                    const transferResponse = await fetch('/api/chains/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            actionChainId: result.actionChainId || actionChainId,
+                            senderPubKey: userPubKey,
+                            receiverPubKey: receiverPubKey,
+                        }),
+                    });
+
+                    if (transferResponse.ok) {
+                        toast.success(`Stage "${data.title}" added and sent to receiver!`, {
+                            icon: '📤',
+                        });
+                    } else {
+                        toast.success(`Stage "${data.title}" added successfully!`);
+                        console.warn('Failed to create transfer record, but stage was created');
+                    }
+                } catch (error) {
+                    console.error('Error creating transfer record:', error);
+                    toast.success(`Stage "${data.title}" added successfully!`);
+                }
+            } else {
+                toast.success(`Stage "${data.title}" added successfully!`);
+            }
             
             // Add new stage to the BOTTOM of the array (append)
             setStages([...stages, newStage]);
@@ -374,12 +405,13 @@ async function createPushdropToken(
     data: Record<string, string>, 
     isFirst: boolean, 
     lastStage: ActionChainStage | null,
+    receiverPubKey: string | undefined,
     setIsBroadcasting: (value: boolean) => void
 ) {
     // If it's the first stage, we only have to create an output
     if (isFirst) {
         try {
-            const lockingScript = await createPushdrop(userWallet, data);
+            const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
             const pushDropAction = await userWallet.createAction({
                 description: "Create pushdrop token",
                 outputs: [
@@ -433,8 +465,8 @@ async function createPushdropToken(
             const fullPreviousTx = Transaction.fromBEEF(previousTx.outputs[0].beef as number[]);
 
             // Create scripts
-            const unlockingScriptFrame = await unlockPushdrop(userWallet);
-            const lockingScript = await createPushdrop(userWallet, data);
+            const unlockingScriptFrame = await unlockPushdrop(userWallet, receiverPubKey);
+            const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
 
             // Create a preimage transaction to sign for the unlockingScript
             const preimage = new Transaction();
