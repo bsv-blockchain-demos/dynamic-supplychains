@@ -42,6 +42,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 if (data.hasActiveChain && data.actionChain) {
                     setActionChainId(data.actionChain._id);
                     setStages(data.actionChain.stages);
+                    setChainTitle(data.actionChain.title || '');
                 }
             } catch (error) {
                 console.error('Error fetching current chain:', error);
@@ -112,11 +113,49 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 throw new Error(result.error || 'Failed to save stage');
             }
 
-            // If this is the first stage, save the actionChainId and create a lock
+            console.log('Stage saved successfully:', result);
+            
+            // If a receiver was specified, send it to them and reset the page
+            const currentActionChainId = result.actionChainId || actionChainId;
+            if (receiverPubKey && currentActionChainId) {
+                try {
+                    const transferResponse = await fetch('/api/chains/send', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            actionChainId: currentActionChainId,
+                            senderPubKey: userPubKey,
+                            receiverPubKey: receiverPubKey,
+                        }),
+                    });
+
+                    if (transferResponse.ok) {
+                        toast.success(`Stage "${data.title}" sent to receiver successfully!`, {
+                            icon: '📤',
+                            duration: 5000,
+                        });
+                    } else {
+                        toast.error('Failed to create transfer record');
+                        console.warn('Failed to create transfer record, but stage was created');
+                    }
+                } catch (error) {
+                    console.error('Error creating transfer record:', error);
+                    toast.error('Failed to send stage to receiver');
+                }
+                
+                // Reset the page to start fresh since this chain is now sent to someone else
+                setStages([]);
+                setActionChainId(null);
+                setChainTitle('');
+                setSelectedTemplate(null);
+                return; // Don't continue with the rest of the logic
+            }
+            
+            // If no receiver, this is for the user themselves
+            // Save the actionChainId and create a lock
             if (isFirst) {
                 setActionChainId(result.actionChainId);
                 
-                // Create lock for the user
                 const lockResponse = await fetch('/api/lock', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -130,37 +169,8 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     toast.error('Failed to create lock for action chain');
                 }
             }
-
-            console.log('Stage saved successfully:', result);
             
-            // If a receiver was specified, create a ChainTransfer record
-            if (receiverPubKey && actionChainId) {
-                try {
-                    const transferResponse = await fetch('/api/chains/send', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({
-                            actionChainId: result.actionChainId || actionChainId,
-                            senderPubKey: userPubKey,
-                            receiverPubKey: receiverPubKey,
-                        }),
-                    });
-
-                    if (transferResponse.ok) {
-                        toast.success(`Stage "${data.title}" added and sent to receiver!`, {
-                            icon: '📤',
-                        });
-                    } else {
-                        toast.success(`Stage "${data.title}" added successfully!`);
-                        console.warn('Failed to create transfer record, but stage was created');
-                    }
-                } catch (error) {
-                    console.error('Error creating transfer record:', error);
-                    toast.success(`Stage "${data.title}" added successfully!`);
-                }
-            } else {
-                toast.success(`Stage "${data.title}" added successfully!`);
-            }
+            toast.success(`Stage "${data.title}" added successfully!`);
             
             // Add new stage to the BOTTOM of the array (append)
             setStages([...stages, newStage]);
@@ -465,7 +475,7 @@ async function createPushdropToken(
             const fullPreviousTx = Transaction.fromBEEF(previousTx.outputs[0].beef as number[]);
 
             // Create scripts
-            const unlockingScriptFrame = await unlockPushdrop(userWallet, receiverPubKey);
+            const unlockingScriptFrame = await unlockPushdrop(userWallet);
             const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
 
             // Create a preimage transaction to sign for the unlockingScript

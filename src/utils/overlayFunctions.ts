@@ -3,13 +3,13 @@ import { LookupResolver, TopicBroadcaster, Transaction } from "@bsv/sdk";
 const overlay = new LookupResolver({
     slapTrackers: ['https://overlay-us-1.bsvb.tech'],
     hostOverrides: {
-        'ls_supplychain': ['https://overlay-us-1.bsvb.tech']
+        'ls_anytx': ['https://overlay-us-1.bsvb.tech']
     }
 });
 
 export async function broadcastTransaction(tx: Transaction) {
     // Lookup a service which accepts this type of token
-    const tb = new TopicBroadcaster(['tm_supplychain'], {
+    const tb = new TopicBroadcaster(['tm_anytx'], {
         resolver: overlay,
     })
 
@@ -23,7 +23,7 @@ export async function getTransactionByTxid(txid: string) {
     try {
         // get transaction from overlay
         const response = await overlay.query({
-            service: 'ls_supplychain', query: {
+            service: 'ls_anytx', query: {
                 txid: txid
             }
         }, 10000);

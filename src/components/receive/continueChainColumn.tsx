@@ -3,6 +3,7 @@
 import { ActionChainStage } from "../../lib/mongo";
 import { StageItem } from "../renderStages/stageItem";
 import { CreateStageModal } from "../stageActions/createStageModal";
+import { CHAIN_TEMPLATES, ChainTemplate } from "../stageActions/createModalTemplates";
 import { useWalletContext } from "../../context/walletContext";
 import { Transaction, WalletClient } from "@bsv/sdk";
 import { createPushdrop, unlockPushdrop } from "../../utils/pushdropHelpers";
@@ -33,6 +34,8 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
     const [stages, setStages] = useState<ActionChainStage[]>(chain.stages);
     const [isBroadcasting, setIsBroadcasting] = useState(false);
     const [hasAddedStage, setHasAddedStage] = useState(false);
+    const [isFinalizing, setIsFinalizing] = useState(false);
+    const [selectedTemplate, setSelectedTemplate] = useState<ChainTemplate | null>(null);
 
     const { userWallet, userPubKey } = useWalletContext();
 
@@ -139,6 +142,60 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
         }
     };
 
+    const handleFinalizeChain = async () => {
+        if (!userPubKey) {
+            console.error('Missing userPubKey');
+            toast.error('Missing user credentials');
+            return;
+        }
+
+        if (stages.length < 2) {
+            toast.error('You need at least 2 stages to finalize the chain');
+            return;
+        }
+
+        if (!chain.title || chain.title.trim() === '') {
+            toast.error('Chain must have a title to finalize');
+            return;
+        }
+
+        setIsFinalizing(true);
+        try {
+            const response = await fetch('/api/stages/finalize', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userPubKey,
+                    actionChainId: chain.actionChainId,
+                    chainTitle: chain.title,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                toast.error(result.error || 'Failed to finalize chain');
+                throw new Error(result.error || 'Failed to finalize chain');
+            }
+
+            console.log('Chain finalized successfully:', result);
+            toast.success(`ActionChain finalized with ${result.stagesCount} stages!`, {
+                duration: 5000,
+                icon: '✅',
+            });
+            
+            // Go back to the list after finalizing
+            setTimeout(() => {
+                onBack();
+            }, 1500);
+        } catch (error) {
+            console.error('Error finalizing chain:', error);
+            toast.error('Failed to finalize the action chain');
+        } finally {
+            setIsFinalizing(false);
+        }
+    };
+
     return (
         <>
             <div className="w-full flex flex-col items-center gap-8 py-8">
@@ -154,11 +211,11 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                 </div>
 
                 {/* Chain Info */}
-                <div className="w-full max-w-xl bg-white rounded-xl p-6 shadow-lg">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-4">
+                <div className="w-full max-w-xl bg-gradient-to-br from-gray-800 to-gray-900 rounded-xl p-6 shadow-lg border border-gray-700">
+                    <h2 className="text-2xl font-bold text-white mb-4">
                         {chain.title || 'Untitled Chain'}
                     </h2>
-                    <div className="space-y-2 text-sm text-gray-600">
+                    <div className="space-y-2 text-sm text-gray-300">
                         <div className="flex items-center gap-2">
                             <span className="font-semibold">Sent by:</span>
                             <span className="truncate font-mono text-xs">
@@ -175,6 +232,75 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                         </div>
                     </div>
                 </div>
+
+                {/* Template Selection - Show before adding stage */}
+                {!hasAddedStage && (
+                    <div className="w-full max-w-xl">
+                        <p className="text-xs font-medium text-blue-200 mb-2">Quick Templates:</p>
+                        <div className="flex gap-2 flex-wrap">
+                            {CHAIN_TEMPLATES.map((template) => (
+                                <button
+                                    key={template.title}
+                                    type="button"
+                                    onClick={() => {
+                                        if (selectedTemplate?.title === template.title) {
+                                            // Deselect if clicking the already selected template
+                                            setSelectedTemplate(null);
+                                        } else {
+                                            // Select the template
+                                            setSelectedTemplate(template);
+                                            toast.success(`${template.title} template selected!`);
+                                        }
+                                    }}
+                                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all hover:cursor-pointer ${
+                                        selectedTemplate?.title === template.title
+                                            ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-300'
+                                            : 'bg-white text-blue-900 hover:bg-blue-50 shadow-md hover:shadow-lg'
+                                    }`}
+                                >
+                                    {template.title}
+                                </button>
+                            ))}
+                        </div>
+                        {selectedTemplate && (
+                            <p className="text-xs text-blue-200 mt-3">
+                                💡 Tip: Template stages will appear with pre-filled metadata fields when creating stages
+                            </p>
+                        )}
+                    </div>
+                )}
+
+                {/* Info message */}
+                {hasAddedStage && stages.length < 2 && (
+                    <div className="w-full max-w-xl bg-yellow-50 border-l-4 border-yellow-400 p-4 rounded">
+                        <p className="text-sm text-yellow-700">
+                            <strong>Note:</strong> You need at least 2 stages. Currently: {stages.length}/2
+                        </p>
+                    </div>
+                )}
+
+                {/* Finalize Button - Show after adding stage */}
+                {hasAddedStage && stages.length >= 2 && (
+                    <div className="w-full max-w-xl">
+                        <button
+                            onClick={handleFinalizeChain}
+                            disabled={isFinalizing || !chain.title || chain.title.trim() === ''}
+                            className="w-full px-6 py-4 bg-green-600 hover:bg-green-700 disabled:bg-gray-400 disabled:opacity-60 text-white rounded-lg font-bold text-lg transition-colors shadow-lg hover:shadow-xl disabled:cursor-not-allowed hover:cursor-pointer flex items-center justify-center gap-3"
+                        >
+                            {isFinalizing && <Spinner size="sm" />}
+                            {isFinalizing ? 'Finalizing...' : `✓ Finalize Action Chain (${stages.length} stages)`}
+                        </button>
+                        {(!chain.title || chain.title.trim() === '') ? (
+                            <p className="text-xs text-yellow-300 mt-2 text-center font-medium">
+                                ⚠️ Chain needs a title to finalize
+                            </p>
+                        ) : (
+                            <p className="text-xs text-blue-200 mt-2 text-center">
+                                This will complete and submit your action chain to the blockchain
+                            </p>
+                        )}
+                    </div>
+                )}
 
                 {hasAddedStage && (
                     <div className="w-full max-w-xl bg-green-50 border-l-4 border-green-400 p-4 rounded">
@@ -234,14 +360,11 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
 
                 {hasAddedStage && (
                     <div className="w-full max-w-xl text-center">
-                        <p className="text-white text-sm mb-4">
-                            You can now send this chain to someone else or view it in your completed chains.
-                        </p>
                         <button
                             onClick={onBack}
                             className="px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"
                         >
-                            View Other Received Chains
+                            ← View Other Received Chains
                         </button>
                     </div>
                 )}
@@ -252,7 +375,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                 isOpen={isModalOpen}
                 onClose={() => setIsModalOpen(false)}
                 onSubmit={handleAddStage}
-                selectedTemplate={null}
+                selectedTemplate={selectedTemplate}
                 stageIndex={stages.length}
                 isBroadcasting={isBroadcasting}
             />
@@ -276,9 +399,9 @@ async function createContinuationToken(
         }
         const fullPreviousTx = Transaction.fromBEEF(previousTx.outputs[0].beef as number[]);
 
-        // Create scripts
-        const unlockingScriptFrame = await unlockPushdrop(userWallet, receiverPubKey);
-        const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
+            // Create scripts
+            const unlockingScriptFrame = await unlockPushdrop(userWallet);
+            const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
 
         // Create a preimage transaction to sign for the unlockingScript
         const preimage = new Transaction();

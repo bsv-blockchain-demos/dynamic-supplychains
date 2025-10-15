@@ -3,6 +3,7 @@
 import { Utils, Hash, SymmetricKey, Transaction } from "@bsv/sdk";
 import { getTransactionByTxid } from "../../utils/overlayFunctions";
 import { useEffect, useState, useCallback } from "react";
+import { StageItemDetailsModal } from "./stageItemDetailsModal";
 
 interface StageItemDetailsProps {
     transactionId: string;
@@ -13,6 +14,7 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
     const [data, setData] = useState<any>(null);
     const [isLoading, setIsLoading] = useState(true);
     const [error, setError] = useState<string | null>(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const fetchData = useCallback(async () => {
         setIsLoading(true);
@@ -42,12 +44,12 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
             // When using pushdrop the data is stored in the lockingScript chunk 0
             const encryptedData = lockingScript.chunks[0].data as number[];
 
-            // Try to decrypt with the receiver key
+            // Try to decrypt - first with the receiver key, then with "self" if that fails
             let decryptedObject: any = null;
             let decryptionError = null;
             
+            // Try the receiver key first
             try {
-                // Use the receiver key we got from the API
                 const receiverBytes = Utils.toArray(receiverKey, 'utf8');
                 const keyBytes = Hash.sha256(receiverBytes);
                 const key = new SymmetricKey(keyBytes);
@@ -56,8 +58,24 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
                 const decryptedString = Utils.toUTF8(decryptedData);
                 decryptedObject = JSON.parse(decryptedString);
             } catch (err) {
-                decryptionError = "Unable to decrypt (may be locked to another receiver)";
-                console.log("Decryption failed for receiver:", receiverDisplay);
+                // If receiver key fails and it's not "self", try "self" as fallback
+                if (receiverKey !== "self") {
+                    try {
+                        const selfBytes = Utils.toArray("self", 'utf8');
+                        const selfKeyBytes = Hash.sha256(selfBytes);
+                        const selfKey = new SymmetricKey(selfKeyBytes);
+                        
+                        const decryptedData = selfKey.decrypt(encryptedData) as number[];
+                        const decryptedString = Utils.toUTF8(decryptedData);
+                        decryptedObject = JSON.parse(decryptedString);
+                    } catch (selfErr) {
+                        decryptionError = "Unable to decrypt with receiver key or self";
+                        console.log("Decryption failed for both receiver and self:", receiverDisplay);
+                    }
+                } else {
+                    decryptionError = "Unable to decrypt";
+                    console.log("Decryption failed for receiver:", receiverDisplay);
+                }
             }
 
             setData({
@@ -82,22 +100,23 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
     }, [fetchData]);
 
     return (
-        <div className="w-80 bg-white rounded-xl border-2 border-blue-300 shadow-lg p-6 animate-in fade-in duration-200">
-            {/* Header */}
-            <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-gray-900">Stage Details</h3>
-                <button
-                    onClick={onClose}
-                    className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100 hover:cursor-pointer"
-                >
-                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                    </svg>
-                </button>
-            </div>
+        <>
+            <div className="w-80 bg-white rounded-xl border-2 border-blue-300 shadow-lg p-6 animate-in fade-in duration-200 h-[420px] flex flex-col">
+                {/* Header */}
+                <div className="flex items-center justify-between mb-4 flex-shrink-0">
+                    <h3 className="text-lg font-bold text-gray-900">Stage Details</h3>
+                    <button
+                        onClick={onClose}
+                        className="text-gray-400 hover:text-gray-600 transition-colors p-1 rounded-full hover:bg-gray-100 hover:cursor-pointer"
+                    >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
 
-            {/* Content */}
-            <div className="space-y-4">
+                {/* Content */}
+                <div className="space-y-4 overflow-y-auto flex-1 min-h-0">
                 <div>
                     <p className="text-xs text-gray-500 font-medium mb-1">Transaction ID</p>
                     <p className="text-sm text-gray-900 break-all font-mono bg-gray-50 p-2 rounded">
@@ -178,6 +197,30 @@ export const StageItemDetails = ({ transactionId, onClose }: StageItemDetailsPro
                     </>
                 )}
             </div>
+
+            {/* Expand Button */}
+            {!isLoading && !error && data && (
+                <div className="mt-4 pt-4 border-t border-gray-200 flex-shrink-0">
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="w-full px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors text-sm flex items-center justify-center gap-2 hover:cursor-pointer"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+                        </svg>
+                        Expand Full Details
+                    </button>
+                </div>
+            )}
         </div>
+
+        {/* Full Details Modal */}
+        {isModalOpen && (
+            <StageItemDetailsModal
+                transactionId={transactionId}
+                onClose={() => setIsModalOpen(false)}
+            />
+        )}
+    </>
     );
 };

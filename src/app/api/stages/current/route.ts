@@ -53,6 +53,7 @@ export async function GET(request: NextRequest) {
             actionChain: {
                 _id: actionChain._id.toString(),
                 userId: actionChain.userId,
+                title: actionChain.title,
                 stages: actionChain.stages,
                 createdAt: actionChain.createdAt,
                 updatedAt: actionChain.updatedAt,

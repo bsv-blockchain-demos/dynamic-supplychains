@@ -23,9 +23,12 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        // Find all transfers to this user
+        // Find all transfers to this user that haven't been continued yet
         const transfers = await chainTransfersCollection
-            .find({ receiverPubKey })
+            .find({ 
+                receiverPubKey,
+                continued: { $ne: true } // Only show chains that haven't been continued
+            })
             .sort({ sentAt: -1 })
             .toArray();
 

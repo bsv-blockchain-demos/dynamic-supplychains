@@ -31,7 +31,7 @@ export const Navbar = () => {
                                     : 'text-white hover:text-blue-200'
                             }`}
                         >
-                            Receive
+                            Received
                         </Link>
                         <Link 
                             href="/examples" 

@@ -44,19 +44,19 @@ export async function createPushdrop(wallet: WalletInterface, data: any, receive
 }
 
 // Will require a preimage transaction to sign to get the actual unlockingScript
-// If receiverPubKey is provided, it means we're unlocking a token that was sent to us
-// Otherwise, we're unlocking our own token (self)
-export async function unlockPushdrop(wallet: WalletInterface, receiverPubKey?: string) {
+// Always uses "self" as counterparty because the wallet signature proves you're the intended receiver
+// Only the wallet with the correct key can unlock a pushdrop locked to them
+export async function unlockPushdrop(wallet: WalletInterface) {
     try {
-        // Use provided receiver or fallback to "self"
-        const RECEIVER = receiverPubKey || "self";
+        // Always use "self" - the wallet proves you're the legitimate recipient
+        const RECEIVER = "self";
 
         // Unlock a pushdrop token
         const pushdrop = new PushDrop(wallet);
         const unlockingScriptFrame = pushdrop.unlock(
             customInstructions.protocolID,
             customInstructions.keyID,
-            RECEIVER, // Counterparty
+            RECEIVER, // Counterparty - always "self" because YOUR wallet unlocks it
             "single",
             true,
             1,
