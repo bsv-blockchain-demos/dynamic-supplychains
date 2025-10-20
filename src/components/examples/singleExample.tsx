@@ -93,6 +93,12 @@ export const SingleExample = ({ actionChainId }: SingleExampleProps) => {
                 <h1 className="text-4xl font-bold text-white mb-4">
                     {actionChain.title || 'Untitled Chain'}
                 </h1>
+                <div className="mb-3">
+                    <span className="text-blue-100 text-xs font-semibold">Chain ID:</span>{' '}
+                    <span className="font-mono text-blue-200 text-xs">
+                        {actionChain._id}
+                    </span>
+                </div>
                 <div className="flex justify-center gap-6 text-blue-100 text-sm">
                     <div>
                         <span className="font-semibold">Stages:</span> {actionChain.stages.length}

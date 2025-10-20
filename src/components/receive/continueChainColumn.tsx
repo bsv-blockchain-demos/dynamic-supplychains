@@ -57,13 +57,15 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
         
         // Create the transaction for the new stage
         setIsBroadcasting(true);
-        const txid = await createContinuationToken(userWallet, data, lastStage, newReceiverPubKey, setIsBroadcasting);
+        const result = await createContinuationToken(userWallet, data, lastStage, newReceiverPubKey);
 
-        if (!txid) {
+        if (!result || !result.txid) {
             setIsBroadcasting(false);
             toast.error('Failed to create pushdrop token');
             throw new Error("Failed to create pushdrop token");
         }
+
+        const { txid, tx } = result;
 
         // Create new stage object
         const newStage: ActionChainStage = {
@@ -93,6 +95,20 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
             }
 
             console.log('Stage added successfully:', result);
+            
+            // Broadcast transaction with chainId in background
+            (async () => {
+                try {
+                    const response = await broadcastTransaction(tx, chain.actionChainId);
+                    console.log("Broadcast response: ", response);
+                    toast.success("Transaction broadcasted successfully");
+                    setIsBroadcasting(false);
+                } catch (error) {
+                    console.error("Broadcast failed:", error);
+                    toast.error("Warning: Transaction created but broadcast failed");
+                    setIsBroadcasting(false);
+                }
+            })();
             
             // If a new receiver was specified, create another ChainTransfer record
             if (newReceiverPubKey) {
@@ -406,9 +422,8 @@ async function createContinuationToken(
     userWallet: WalletClient, 
     data: Record<string, string>, 
     lastStage: ActionChainStage,
-    receiverPubKey: string | undefined,
-    setIsBroadcasting: (value: boolean) => void
-) {
+    receiverPubKey: string | undefined
+): Promise<{ txid: string; tx: Transaction } | null> {
     try {
         // Get the transactionID from the last stage to unlock
         const previousTx = await getTransactionByTxid(lastStage.TransactionID);
@@ -459,27 +474,13 @@ async function createContinuationToken(
             }
         });
 
-        if (!pushDropAction) {
+        if (!pushDropAction || !pushDropAction.txid) {
             throw new Error("Failed to create pushdrop action");
         }
 
         const tx = Transaction.fromBEEF(pushDropAction.tx as number[]);
 
-        // Broadcast in background without blocking
-        (async () => {
-            try {
-                const response = await broadcastTransaction(tx);
-                console.log("Broadcast response: ", response);
-                toast.success("Transaction broadcasted successfully");
-                setIsBroadcasting(false);
-            } catch (error) {
-                console.error("Broadcast failed:", error);
-                toast.error("Warning: Transaction created but broadcast failed");
-                setIsBroadcasting(false);
-            }
-        })();
-
-        return pushDropAction.txid;
+        return { txid: pushDropAction.txid, tx };
     } catch (error) {
         console.error("Error creating continuation token:", error);
         throw error;

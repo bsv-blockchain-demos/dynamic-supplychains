@@ -76,13 +76,15 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
         
         // TransactionID will come from the wallet create pushdrop
         setIsBroadcasting(true);
-        const txid = await createPushdropToken(userWallet, data, isFirst, lastStage, receiverPubKey, setIsBroadcasting);
+        const result = await createPushdropToken(userWallet, data, isFirst, lastStage, receiverPubKey);
 
-        if (!txid) {
+        if (!result || !result.txid) {
             setIsBroadcasting(false);
             toast.error('Failed to create pushdrop token');
             throw new Error("Failed to create pushdrop token");
         }
+
+        const { txid, tx } = result;
 
         // Create new stage object
         const newStage: ActionChainStage = {
@@ -115,8 +117,28 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
 
             console.log('Stage saved successfully:', result);
             
-            // If a receiver was specified, send it to them and reset the page
+            // Get the actionChainId for broadcasting
             const currentActionChainId = result.actionChainId || actionChainId;
+            
+            // Broadcast transaction with chainId in background
+            if (currentActionChainId && tx) {
+                (async () => {
+                    try {
+                        const response = await broadcastTransaction(tx, currentActionChainId);
+                        console.log("Broadcast response: ", response);
+                        toast.success("Transaction broadcasted successfully");
+                        setIsBroadcasting(false);
+                    } catch (error) {
+                        console.error("Broadcast failed:", error);
+                        toast.error("Warning: Transaction created but broadcast failed");
+                        setIsBroadcasting(false);
+                    }
+                })();
+            } else {
+                setIsBroadcasting(false);
+            }
+            
+            // If a receiver was specified, send it to them and reset the page
             if (receiverPubKey && currentActionChainId) {
                 try {
                     const transferResponse = await fetch('/api/chains/send', {
@@ -416,9 +438,8 @@ async function createPushdropToken(
     data: Record<string, string>, 
     isFirst: boolean, 
     lastStage: ActionChainStage | null,
-    receiverPubKey: string | undefined,
-    setIsBroadcasting: (value: boolean) => void
-) {
+    receiverPubKey: string | undefined
+): Promise<{ txid: string; tx: Transaction } | null> {
     // If it's the first stage, we only have to create an output
     if (isFirst) {
         try {
@@ -437,27 +458,13 @@ async function createPushdropToken(
                 }
             });
 
-            if (!pushDropAction) {
+            if (!pushDropAction || !pushDropAction.txid) {
                 throw new Error("Failed to create pushdrop action");
             }
 
             const tx = Transaction.fromBEEF(pushDropAction.tx as number[]);
 
-            // Broadcast in background without blocking
-            (async () => {
-                try {
-                    const response = await broadcastTransaction(tx);
-                    console.log("Broadcast response: ", response);
-                    toast.success("Transaction broadcasted successfully");
-                    setIsBroadcasting(false);
-                } catch (error) {
-                    console.error("Broadcast failed:", error);
-                    toast.error("Warning: Transaction created but broadcast failed");
-                    setIsBroadcasting(false);
-                }
-            })();
-
-            return pushDropAction.txid;
+            return { txid: pushDropAction.txid, tx };
         } catch (error) {
             console.error("Error creating pushdrop token:", error);
             throw error;
@@ -516,27 +523,13 @@ async function createPushdropToken(
                 }
             });
 
-            if (!pushDropAction) {
+            if (!pushDropAction || !pushDropAction.txid) {
                 throw new Error("Failed to create pushdrop action");
             }
 
             const tx = Transaction.fromBEEF(pushDropAction.tx as number[]);
 
-            // Broadcast in background without blocking
-            (async () => {
-                try {
-                    const response = await broadcastTransaction(tx);
-                    console.log("Broadcast response: ", response);
-                    toast.success("Transaction broadcasted successfully");
-                    setIsBroadcasting(false);
-                } catch (error) {
-                    console.error("Broadcast failed:", error);
-                    toast.error("Warning: Transaction created but broadcast failed");
-                    setIsBroadcasting(false);
-                }
-            })();
-
-            return pushDropAction.txid;
+            return { txid: pushDropAction.txid, tx };
         } catch (error) {
             console.error("Error creating pushdrop token:", error);
             throw error;
