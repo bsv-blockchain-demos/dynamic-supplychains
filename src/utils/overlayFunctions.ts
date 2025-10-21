@@ -1,4 +1,4 @@
-import { LookupResolver, TopicBroadcaster, Transaction } from "@bsv/sdk";
+import { LookupResolver, TopicBroadcaster, Transaction, Utils } from "@bsv/sdk";
 
 const overlay = new LookupResolver({
     slapTrackers: ['https://overlay-us-1.bsvb.tech'],
@@ -13,16 +13,42 @@ export async function broadcastTransaction(tx: Transaction, chainId: string) {
         resolver: overlay,
     });
 
-    // Add the metadata field to tx with chainId using OffChainValues
-    const metadata = new Map().set("OffChainValues", {
-        chainId: chainId
-    });
-    tx.metadata = metadata;
+    // // Add the metadata field to tx with chainId using OffChainValues
+    // const metadata = new Map().set("OffChainValues", {
+    //     chainId: chainId
+    // });
+    // tx.metadata = metadata;
 
-    // Send the tx to that overlay.
-    const overlayResponse = await tx.broadcast(tb);
-    console.log("Overlay response: ", overlayResponse);
-    return overlayResponse;
+    // console.log("Broadcasting transaction: ", tx);
+
+    // // Send the tx to that overlay.
+    // const overlayResponse = await tx.broadcast(tb);
+    // console.log("Overlay response: ", overlayResponse);
+    const headers = {
+        'x-includes-off-chain-values': 'true',
+        'Content-Type': 'application/octet-stream',
+        'x-topics': JSON.stringify(['tm_supplychain'])
+    }
+    let taggedBEEF = {
+        beef: tx.toBEEF(),
+        offChainValues: JSON.stringify({ chainId: chainId })
+    }
+
+    const w = new Utils.Writer()
+    w.writeVarIntNum(taggedBEEF.beef.length)
+    w.write(taggedBEEF.beef)
+    w.write(Utils.toArray(taggedBEEF.offChainValues))
+    const body = new Uint8Array(w.toArray())
+
+    const overlayResponse = await fetch('https://overlay-us-1.bsvb.tech/submit', {
+        method: 'POST',
+        headers,
+        body,
+    });
+
+    const data = await overlayResponse.json();
+    console.log("Overlay response: ", data);
+    return data;
 }
 
 export async function getTransactionByTxid(txid: string) {
