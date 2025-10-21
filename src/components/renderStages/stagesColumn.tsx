@@ -11,6 +11,7 @@ import { broadcastTransaction, getTransactionByTxid } from "../../utils/overlayF
 import { useState, useEffect } from "react";
 import { toast } from "react-hot-toast";
 import { Spinner } from "../ui/spinner";
+import Link from "next/link";
 
 const MAX_STAGES = 8;
 const MIN_STAGES = 2;
@@ -287,6 +288,36 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                         placeholder="Choose a template or enter your own title"
                         className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition text-black font-medium bg-white shadow-lg"
                     />
+                    
+                    {/* Chain ID Display */}
+                    {actionChainId && (
+                        <div className="mt-3 p-3 bg-blue-900/50 rounded-lg border border-blue-700 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+                            <div className="flex-1 min-w-0">
+                                <span className="text-blue-100 text-xs font-semibold mr-2">Chain ID:</span>
+                                <Link 
+                                    href={`/examples/${actionChainId}`}
+                                    className="font-mono text-blue-300 text-xs break-all hover:text-blue-100 hover:underline cursor-pointer transition-colors"
+                                >
+                                    {actionChainId}
+                                </Link>
+                            </div>
+                            <button
+                                onClick={(e) => {
+                                    e.preventDefault();
+                                    navigator.clipboard.writeText(actionChainId);
+                                    toast.success('Chain ID copied to clipboard!', { duration: 2000 });
+                                }}
+                                className="px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white text-xs rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap hover:cursor-pointer"
+                                title="Copy Chain ID"
+                            >
+                                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                </svg>
+                                Copy
+                            </button>
+                        </div>
+                    )}
 
                     {/* Template Selection Buttons */}
                     <div className="mt-3">

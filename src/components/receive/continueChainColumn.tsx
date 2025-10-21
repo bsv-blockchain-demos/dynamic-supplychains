@@ -11,6 +11,7 @@ import { broadcastTransaction, getTransactionByTxid } from "../../utils/overlayF
 import { useState } from "react";
 import { toast } from "react-hot-toast";
 import { Spinner } from "../ui/spinner";
+import Link from "next/link";
 
 interface ReceivedChain {
     transferId: string;
@@ -250,6 +251,32 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                         {chain.title || 'Untitled Chain'}
                     </h2>
                     <div className="space-y-2 text-sm text-gray-300">
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                            <span className="font-semibold whitespace-nowrap">Chain ID:</span>
+                            <div className="flex-1 flex items-center gap-2 min-w-0">
+                                <Link 
+                                    href={`/examples/${chain.actionChainId}`}
+                                    className="truncate font-mono text-xs text-blue-300 hover:text-blue-100 hover:underline cursor-pointer transition-colors"
+                                >
+                                    {chain.actionChainId}
+                                </Link>
+                                <button
+                                    onClick={(e) => {
+                                        e.preventDefault();
+                                        navigator.clipboard.writeText(chain.actionChainId);
+                                        toast.success('Chain ID copied to clipboard!', { duration: 2000 });
+                                    }}
+                                    className="px-2 py-1 bg-blue-700 hover:bg-blue-600 text-white text-xs rounded transition-colors flex items-center gap-1 whitespace-nowrap flex-shrink-0 hover:cursor-pointer"
+                                    title="Copy Chain ID"
+                                >
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                        <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                                    </svg>
+                                    Copy
+                                </button>
+                            </div>
+                        </div>
                         <div className="flex items-center gap-2">
                             <span className="font-semibold">Sent by:</span>
                             <span className="truncate font-mono text-xs">
