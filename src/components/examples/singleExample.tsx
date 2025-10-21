@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { ActionChainStage } from "../../lib/mongo";
 import { StageItem } from "../renderStages/stageItem";
 import { Spinner } from "../ui/spinner";
+import { toast } from "react-hot-toast";
 
 interface ActionChainDetail {
     _id: string;
@@ -93,13 +94,8 @@ export const SingleExample = ({ actionChainId }: SingleExampleProps) => {
                 <h1 className="text-4xl font-bold text-white mb-4">
                     {actionChain.title || 'Untitled Chain'}
                 </h1>
-                <div className="mb-3">
-                    <span className="text-blue-100 text-xs font-semibold">Chain ID:</span>{' '}
-                    <span className="font-mono text-blue-200 text-xs">
-                        {actionChain._id}
-                    </span>
-                </div>
-                <div className="flex justify-center gap-6 text-blue-100 text-sm">
+                
+                <div className="flex justify-center gap-6 text-blue-100 text-sm mb-4">
                     <div>
                         <span className="font-semibold">Stages:</span> {actionChain.stages.length}
                     </div>
@@ -115,6 +111,33 @@ export const SingleExample = ({ actionChainId }: SingleExampleProps) => {
                             {new Date(actionChain.finalizedAt).toLocaleDateString()}
                         </div>
                     )}
+                </div>
+
+                {/* Chain ID Display */}
+                <div className="max-w-xl mx-auto">
+                    <div className="p-3 bg-blue-900/50 rounded-lg border border-blue-700 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3 justify-center">
+                        <div className="flex-1 text-center sm:text-left min-w-0">
+                            <span className="text-blue-100 text-xs font-semibold mr-2">Chain ID:</span>
+                            <span className="font-mono text-blue-300 text-xs break-all">
+                                {actionChain._id}
+                            </span>
+                        </div>
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                navigator.clipboard.writeText(actionChain._id);
+                                toast.success('Chain ID copied to clipboard!', { duration: 2000 });
+                            }}
+                            className="px-3 py-2 bg-blue-700 hover:bg-blue-600 text-white text-xs rounded-md transition-colors flex items-center gap-1.5 whitespace-nowrap hover:cursor-pointer mx-auto sm:mx-0"
+                            title="Copy Chain ID"
+                        >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                                <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                            </svg>
+                            Copy
+                        </button>
+                    </div>
                 </div>
             </div>
 

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Spinner } from "../ui/spinner";
 
@@ -18,6 +18,7 @@ interface ActionChainCard {
 export const ExamplesList = () => {
     const [actionChains, setActionChains] = useState<ActionChainCard[]>([]);
     const [isLoading, setIsLoading] = useState(true);
+    const [searchQuery, setSearchQuery] = useState("");
 
     useEffect(() => {
         const fetchActionChains = async () => {
@@ -38,10 +39,35 @@ export const ExamplesList = () => {
         fetchActionChains();
     }, []);
 
+    // Filter action chains based on search query
+    const filteredChains = useMemo(() => {
+        if (!searchQuery.trim()) {
+            return actionChains;
+        }
+
+        const query = searchQuery.toLowerCase();
+        return actionChains.filter((chain) => {
+            // Search by title
+            if (chain.title?.toLowerCase().includes(query)) return true;
+            
+            // Search by chain ID
+            if (chain._id.toLowerCase().includes(query)) return true;
+            
+            // Search by creator ID
+            if (chain.userId.toLowerCase().includes(query)) return true;
+            
+            // Search by first or last stage
+            if (chain.firstStage?.toLowerCase().includes(query)) return true;
+            if (chain.lastStage?.toLowerCase().includes(query)) return true;
+            
+            return false;
+        });
+    }, [actionChains, searchQuery]);
+
     return (
         <>
             {/* Header */}
-            <div className="text-center mb-12">
+            <div className="text-center mb-8">
                 <h1 className="text-4xl font-bold text-white mb-4">
                     Finalized Action Chains
                 </h1>
@@ -49,6 +75,58 @@ export const ExamplesList = () => {
                     Browse completed blockchain supply chain examples
                 </p>
             </div>
+
+            {/* Search Bar */}
+            {!isLoading && actionChains.length > 0 && (
+                <div className="max-w-2xl mx-auto mb-8">
+                    <div className="relative">
+                        <input
+                            type="text"
+                            value={searchQuery}
+                            onChange={(e) => setSearchQuery(e.target.value)}
+                            placeholder="Search by title, chain ID, creator, or stage..."
+                            className="w-full px-5 py-3 pl-12 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition text-gray-900 font-medium bg-white shadow-lg"
+                        />
+                        <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            width="20"
+                            height="20"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                            className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400"
+                        >
+                            <circle cx="11" cy="11" r="8"></circle>
+                            <path d="m21 21-4.35-4.35"></path>
+                        </svg>
+                        {searchQuery && (
+                            <button
+                                onClick={() => setSearchQuery("")}
+                                className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors hover:cursor-pointer"
+                                title="Clear search"
+                            >
+                                <svg
+                                    xmlns="http://www.w3.org/2000/svg"
+                                    width="20"
+                                    height="20"
+                                    viewBox="0 0 24 24"
+                                    fill="none"
+                                    stroke="currentColor"
+                                    strokeWidth="2"
+                                    strokeLinecap="round"
+                                    strokeLinejoin="round"
+                                >
+                                    <line x1="18" y1="6" x2="6" y2="18"></line>
+                                    <line x1="6" y1="6" x2="18" y2="18"></line>
+                                </svg>
+                            </button>
+                        )}
+                    </div>
+                </div>
+            )}
 
             {/* Loading State */}
             {isLoading && (
@@ -66,10 +144,18 @@ export const ExamplesList = () => {
                 </div>
             )}
 
+            {/* No Results State */}
+            {!isLoading && actionChains.length > 0 && filteredChains.length === 0 && (
+                <div className="text-center text-white">
+                    <p className="text-xl">No chains match your search.</p>
+                    <p className="text-blue-200 mt-2">Try a different search term or <button onClick={() => setSearchQuery("")} className="underline hover:text-white transition-colors hover:cursor-pointer">clear the search</button>.</p>
+                </div>
+            )}
+
             {/* Action Chains Grid */}
-            {!isLoading && actionChains.length > 0 && (
+            {!isLoading && filteredChains.length > 0 && (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                    {actionChains.map((chain) => (
+                    {filteredChains.map((chain) => (
                         <Link
                             key={chain._id}
                             href={`/examples/${chain._id}`}
@@ -128,7 +214,15 @@ export const ExamplesList = () => {
             {/* Total Count */}
             {!isLoading && actionChains.length > 0 && (
                 <div className="mt-8 text-center text-blue-200 text-sm">
-                    Showing {actionChains.length} finalized action chain{actionChains.length !== 1 ? 's' : ''}
+                    {searchQuery ? (
+                        <span>
+                            Showing {filteredChains.length} of {actionChains.length} finalized action chain{actionChains.length !== 1 ? 's' : ''}
+                        </span>
+                    ) : (
+                        <span>
+                            Showing {actionChains.length} finalized action chain{actionChains.length !== 1 ? 's' : ''}
+                        </span>
+                    )}
                 </div>
             )}
         </>
