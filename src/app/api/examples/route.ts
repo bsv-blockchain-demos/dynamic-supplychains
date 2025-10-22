@@ -9,12 +9,18 @@ import { ObjectId } from "mongodb";
  * 
  * Query params:
  * - actionChainId?: string - If provided, fetches only that specific ActionChain
+ * - query?: string - Search query for title, userId, firstStage, lastStage
+ * - limit?: number - Number of results to return (default: 50)
+ * - skip?: number - Number of results to skip for pagination (default: 0)
  */
 export async function GET(request: NextRequest) {
     try {
         const { actionChainCollection } = await connectToMongo();
         const { searchParams } = new URL(request.url);
         const actionChainId = searchParams.get('actionChainId');
+        const query = searchParams.get('query');
+        const limit = parseInt(searchParams.get('limit') || '50');
+        const skip = parseInt(searchParams.get('skip') || '0');
 
         if (actionChainId) {
             // Fetch specific ActionChain by ID
@@ -44,10 +50,28 @@ export async function GET(request: NextRequest) {
             }, { status: 200 });
         }
 
-        // Fetch all finalized ActionChains
+        // Build search filter
+        const filter: any = { finalized: true };
+        
+        if (query) {
+            // Create a regex for case-insensitive search
+            const searchRegex = { $regex: query, $options: 'i' };
+            filter.$or = [
+                { title: searchRegex },
+                { userId: searchRegex },
+                { 'stages.title': searchRegex }
+            ];
+        }
+
+        // Get total count for pagination
+        const totalCount = await actionChainCollection.countDocuments(filter);
+
+        // Fetch finalized ActionChains with pagination and search
         const actionChains = await actionChainCollection
-            .find({ finalized: true })
+            .find(filter)
             .sort({ finalizedAt: -1 }) // Most recent first
+            .skip(skip)
+            .limit(limit)
             .toArray();
 
         const formattedChains = actionChains.map(chain => ({
@@ -64,7 +88,10 @@ export async function GET(request: NextRequest) {
 
         return NextResponse.json({
             actionChains: formattedChains,
-            total: formattedChains.length
+            total: totalCount,
+            limit,
+            skip,
+            hasMore: skip + formattedChains.length < totalCount
         }, { status: 200 });
     } catch (error) {
         console.error("Error in examples route:", error);

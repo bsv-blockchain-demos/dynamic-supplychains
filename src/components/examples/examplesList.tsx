@@ -19,28 +19,77 @@ export const ExamplesList = () => {
     const [actionChains, setActionChains] = useState<ActionChainCard[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
+    const [serverSearchQuery, setServerSearchQuery] = useState("");
+    const [totalCount, setTotalCount] = useState(0);
+    const [hasMore, setHasMore] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [limit] = useState(21);
+
+    const fetchActionChains = async (query?: string, page: number = 1) => {
+        setIsLoading(true);
+        try {
+            const skip = (page - 1) * limit;
+            const params = new URLSearchParams();
+            if (query) {
+                params.append('query', query);
+            }
+            params.append('limit', limit.toString());
+            params.append('skip', skip.toString());
+
+            const response = await fetch(`/api/examples?${params.toString()}`);
+            const data = await response.json();
+            
+            if (response.ok) {
+                setActionChains(data.actionChains);
+                setTotalCount(data.total);
+                setHasMore(data.hasMore);
+                setCurrentPage(page);
+            }
+        } catch (error) {
+            console.error('Error fetching action chains:', error);
+        } finally {
+            setIsLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchActionChains = async () => {
-            try {
-                const response = await fetch('/api/examples');
-                const data = await response.json();
-                
-                if (response.ok) {
-                    setActionChains(data.actionChains);
-                }
-            } catch (error) {
-                console.error('Error fetching action chains:', error);
-            } finally {
-                setIsLoading(false);
-            }
-        };
-
         fetchActionChains();
     }, []);
 
-    // Filter action chains based on search query
+    // Handle Enter key press to trigger server-side search
+    const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
+        if (e.key === 'Enter') {
+            e.preventDefault();
+            setServerSearchQuery(searchQuery);
+            setCurrentPage(1); // Reset to first page on new search
+            fetchActionChains(searchQuery.trim() || undefined, 1);
+        }
+    };
+
+    // Pagination handlers
+    const handlePreviousPage = () => {
+        if (currentPage > 1) {
+            const newPage = currentPage - 1;
+            fetchActionChains(serverSearchQuery || undefined, newPage);
+        }
+    };
+
+    const handleNextPage = () => {
+        const totalPages = Math.ceil(totalCount / limit);
+        if (currentPage < totalPages) {
+            const newPage = currentPage + 1;
+            fetchActionChains(serverSearchQuery || undefined, newPage);
+        }
+    };
+
+    // Client-side filter action chains based on search query (for typing)
+    // Only used when server search query is empty
     const filteredChains = useMemo(() => {
+        // If there's a server search query active, don't filter client-side
+        if (serverSearchQuery) {
+            return actionChains;
+        }
+
         if (!searchQuery.trim()) {
             return actionChains;
         }
@@ -62,7 +111,7 @@ export const ExamplesList = () => {
             
             return false;
         });
-    }, [actionChains, searchQuery]);
+    }, [actionChains, searchQuery, serverSearchQuery]);
 
     return (
         <>
@@ -83,8 +132,15 @@ export const ExamplesList = () => {
                         <input
                             type="text"
                             value={searchQuery}
-                            onChange={(e) => setSearchQuery(e.target.value)}
-                            placeholder="Search by title, chain ID, creator, or stage..."
+                            onChange={(e) => {
+                                setSearchQuery(e.target.value);
+                                // Clear server search when user modifies the query
+                                if (serverSearchQuery && e.target.value !== serverSearchQuery) {
+                                    setServerSearchQuery("");
+                                }
+                            }}
+                            onKeyDown={handleSearchSubmit}
+                            placeholder="Search by title, chain ID, creator, or stage... (Press Enter to search)"
                             className="w-full px-5 py-3 pl-12 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition text-gray-900 font-medium bg-white shadow-lg"
                         />
                         <svg
@@ -104,7 +160,12 @@ export const ExamplesList = () => {
                         </svg>
                         {searchQuery && (
                             <button
-                                onClick={() => setSearchQuery("")}
+                                onClick={() => {
+                                    setSearchQuery("");
+                                    setServerSearchQuery("");
+                                    setCurrentPage(1);
+                                    fetchActionChains(undefined, 1);
+                                }}
                                 className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600 transition-colors hover:cursor-pointer"
                                 title="Clear search"
                             >
@@ -148,7 +209,12 @@ export const ExamplesList = () => {
             {!isLoading && actionChains.length > 0 && filteredChains.length === 0 && (
                 <div className="text-center text-white">
                     <p className="text-xl">No chains match your search.</p>
-                    <p className="text-blue-200 mt-2">Try a different search term or <button onClick={() => setSearchQuery("")} className="underline hover:text-white transition-colors hover:cursor-pointer">clear the search</button>.</p>
+                    <p className="text-blue-200 mt-2">Try a different search term or <button onClick={() => {
+                        setSearchQuery("");
+                        setServerSearchQuery("");
+                        setCurrentPage(1);
+                        fetchActionChains(undefined, 1);
+                    }} className="underline hover:text-white transition-colors hover:cursor-pointer">clear the search</button>.</p>
                 </div>
             )}
 
@@ -211,16 +277,66 @@ export const ExamplesList = () => {
                 </div>
             )}
 
-            {/* Total Count */}
-            {!isLoading && actionChains.length > 0 && (
+            {/* Pagination Controls */}
+            {!isLoading && (serverSearchQuery || !searchQuery) && totalCount > limit && (
+                <div className="mt-8 flex flex-col items-center gap-4">
+                    {/* Page Info */}
+                    <div className="text-center text-blue-200 text-sm">
+                        {serverSearchQuery ? (
+                            <span>
+                                Showing {((currentPage - 1) * limit) + 1}-{Math.min(currentPage * limit, totalCount)} of {totalCount} finalized action chain{totalCount !== 1 ? 's' : ''} matching "{serverSearchQuery}"
+                            </span>
+                        ) : (
+                            <span>
+                                Showing {((currentPage - 1) * limit) + 1}-{Math.min(currentPage * limit, totalCount)} of {totalCount} finalized action chain{totalCount !== 1 ? 's' : ''}
+                            </span>
+                        )}
+                    </div>
+
+                    {/* Pagination Buttons */}
+                    <div className="flex items-center gap-4">
+                        <button
+                            onClick={handlePreviousPage}
+                            disabled={currentPage === 1}
+                            className="px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+                        >
+                            ← Previous
+                        </button>
+                        
+                        <span className="text-white font-medium">
+                            Page {currentPage} of {Math.ceil(totalCount / limit)}
+                        </span>
+                        
+                        <button
+                            onClick={handleNextPage}
+                            disabled={!hasMore}
+                            className="px-6 py-2 bg-white text-blue-600 rounded-lg font-semibold shadow-md hover:bg-blue-50 transition-all disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-white"
+                        >
+                            Next →
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* Total Count (for client-side filtering) */}
+            {!isLoading && actionChains.length > 0 && searchQuery && !serverSearchQuery && (
                 <div className="mt-8 text-center text-blue-200 text-sm">
-                    {searchQuery ? (
+                    <span>
+                        Showing {filteredChains.length} of {actionChains.length} finalized action chain{actionChains.length !== 1 ? 's' : ''}
+                    </span>
+                </div>
+            )}
+
+            {/* Simple count when no pagination needed */}
+            {!isLoading && actionChains.length > 0 && (serverSearchQuery || !searchQuery) && totalCount <= limit && (
+                <div className="mt-8 text-center text-blue-200 text-sm">
+                    {serverSearchQuery ? (
                         <span>
-                            Showing {filteredChains.length} of {actionChains.length} finalized action chain{actionChains.length !== 1 ? 's' : ''}
+                            Showing {totalCount} finalized action chain{totalCount !== 1 ? 's' : ''} matching "{serverSearchQuery}"
                         </span>
                     ) : (
                         <span>
-                            Showing {actionChains.length} finalized action chain{actionChains.length !== 1 ? 's' : ''}
+                            Showing {totalCount} finalized action chain{totalCount !== 1 ? 's' : ''}
                         </span>
                     )}
                 </div>
