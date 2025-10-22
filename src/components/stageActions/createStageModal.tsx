@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { CHAIN_TEMPLATES, ChainTemplate, StageTemplate } from "./createModalTemplates";
 import { Spinner } from "../ui/spinner";
 
@@ -27,6 +27,9 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
     const [metadataFields, setMetadataFields] = useState<MetadataField[]>([]);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [showTemplates, setShowTemplates] = useState(false);
+    
+    // Use character limit hook for all inputs
+    const { validateInput, hasWarning, getWarning, clearWarning, getWarningCount } = useCharacterLimit(100);
 
     // Get suggested stages from selected template
     const suggestedStages = selectedTemplate?.stages || [];
@@ -58,8 +61,12 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
     };
 
     const updateMetadataField = (id: string, key: string, value: string) => {
+        // Validate and limit key and value to 100 characters
+        const sanitizedKey = validateInput(key, `metadata-key-${id}`);
+        const sanitizedValue = validateInput(value, `metadata-value-${id}`);
+        
         setMetadataFields(metadataFields.map(field => 
-            field.id === id ? { ...field, key, value } : field
+            field.id === id ? { ...field, key: sanitizedKey, value: sanitizedValue } : field
         ));
     };
 
@@ -181,11 +188,18 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                             id="title"
                             type="text"
                             value={title}
-                            onChange={(e) => setTitle(e.target.value)}
+                            onChange={(e) => setTitle(validateInput(e.target.value, 'title'))}
                             placeholder="e.g., Wellhead, Processing Plant"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black"
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black ${
+                                hasWarning('title') ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                            }`}
                             required
                         />
+                        {hasWarning('title') && (
+                            <p className="text-xs text-red-600 mt-1 animate-in fade-in duration-200">
+                                ⚠️ {getWarning('title')}
+                            </p>
+                        )}
                     </div>
 
                     {/* Image URL */}
@@ -197,10 +211,17 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                             id="imageURL"
                             type="url"
                             value={imageURL}
-                            onChange={(e) => setImageURL(e.target.value)}
+                            onChange={(e) => setImageURL(validateInput(e.target.value, 'imageURL'))}
                             placeholder="https://example.com/image.jpg"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black"
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black ${
+                                hasWarning('imageURL') ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                            }`}
                         />
+                        {hasWarning('imageURL') && (
+                            <p className="text-xs text-red-600 mt-1 animate-in fade-in duration-200">
+                                ⚠️ {getWarning('imageURL')}
+                            </p>
+                        )}
                     </div>
 
                     {/* Receiver Public Key */}
@@ -212,13 +233,21 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                             id="receiverPubKey"
                             type="text"
                             value={receiverPubKey}
-                            onChange={(e) => setReceiverPubKey(e.target.value)}
+                            onChange={(e) => setReceiverPubKey(validateInput(e.target.value, 'receiverPubKey'))}
                             placeholder="Enter receiver's public key to send this stage"
-                            className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black font-mono text-sm"
+                            className={`w-full px-4 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black font-mono text-sm ${
+                                hasWarning('receiverPubKey') ? 'border-red-400 bg-red-50' : 'border-gray-300'
+                            }`}
                         />
-                        <p className="text-xs text-gray-500 mt-1">
-                            💡 If provided, this stage will be locked to the receiver's key on the blockchain
-                        </p>
+                        {hasWarning('receiverPubKey') ? (
+                            <p className="text-xs text-red-600 mt-1 animate-in fade-in duration-200">
+                                ⚠️ {getWarning('receiverPubKey')}
+                            </p>
+                        ) : (
+                            <p className="text-xs text-gray-500 mt-1">
+                                💡 If provided, this stage will be locked to the receiver's key on the blockchain
+                            </p>
+                        )}
                     </div>
 
                     {/* Stage Metadata */}
@@ -232,31 +261,46 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                         {/* Dynamic metadata fields */}
                         <div className="space-y-3 mb-3">
                             {metadataFields.map((field) => (
-                                <div key={field.id} className="flex gap-2 items-start">
-                                    <input
-                                        type="text"
-                                        value={field.key}
-                                        onChange={(e) => updateMetadataField(field.id, e.target.value, field.value)}
-                                        placeholder="Key/ID"
-                                        className="w-1/3 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black text-sm"
-                                    />
-                                    <input
-                                        type="text"
-                                        value={field.value}
-                                        onChange={(e) => updateMetadataField(field.id, field.key, e.target.value)}
-                                        placeholder="Value"
-                                        className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black text-sm"
-                                    />
-                                    <button
-                                        type="button"
-                                        onClick={() => removeMetadataField(field.id)}
-                                        className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
-                                        title="Remove field"
-                                    >
-                                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                                        </svg>
-                                    </button>
+                                <div key={field.id} className="space-y-1">
+                                    <div className="flex gap-2 items-start">
+                                        <input
+                                            type="text"
+                                            value={field.key}
+                                            onChange={(e) => updateMetadataField(field.id, e.target.value, field.value)}
+                                            placeholder="Key/ID"
+                                            className={`w-1/3 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black text-sm ${
+                                                hasWarning(`metadata-key-${field.id}`)
+                                                    ? 'border-red-400 bg-red-50'
+                                                    : 'border-gray-300'
+                                            }`}
+                                        />
+                                        <input
+                                            type="text"
+                                            value={field.value}
+                                            onChange={(e) => updateMetadataField(field.id, field.key, e.target.value)}
+                                            placeholder="Value"
+                                            className={`flex-1 px-3 py-2 border rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition text-black text-sm ${
+                                                hasWarning(`metadata-value-${field.id}`)
+                                                    ? 'border-red-400 bg-red-50'
+                                                    : 'border-gray-300'
+                                            }`}
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={() => removeMetadataField(field.id)}
+                                            className="p-2 text-red-500 hover:text-red-700 hover:bg-red-50 rounded-lg transition-colors cursor-pointer"
+                                            title="Remove field"
+                                        >
+                                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                                            </svg>
+                                        </button>
+                                    </div>
+                                    {(hasWarning(`metadata-key-${field.id}`) || hasWarning(`metadata-value-${field.id}`)) && (
+                                        <p className="text-xs text-red-600 ml-1 animate-in fade-in duration-200">
+                                            ⚠️ {hasWarning(`metadata-key-${field.id}`) ? getWarning(`metadata-key-${field.id}`) : getWarning(`metadata-value-${field.id}`)}
+                                        </p>
+                                    )}
                                 </div>
                             ))}
                         </div>
@@ -297,7 +341,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                             <button
                                 type="submit"
                                 className="flex-1 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors font-medium disabled:bg-blue-300 disabled:cursor-not-allowed cursor-pointer flex items-center justify-center gap-2"
-                                disabled={isSubmitting || isBroadcasting || (receiverPubKey.trim().length > 0 && chainTitle.trim().length === 0)}
+                                disabled={isSubmitting || isBroadcasting || (receiverPubKey.trim().length > 0 && chainTitle.trim().length === 0) || getWarningCount() > 0}
                             >
                                 {isSubmitting && <Spinner size="sm" />}
                                 {isSubmitting ? "Creating..." : "Create Stage"}
@@ -306,6 +350,11 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                         {isBroadcasting && (
                             <p className="text-xs text-yellow-600 text-center font-medium">
                                 ⏳ Waiting for previous transaction to broadcast...
+                            </p>
+                        )}
+                        {getWarningCount() > 0 && (
+                            <p className="text-xs text-red-600 text-center font-medium">
+                                ⚠️ Please fix {getWarningCount()} input validation {getWarningCount() === 1 ? 'error' : 'errors'} before creating
                             </p>
                         )}
                         {receiverPubKey.trim() && !chainTitle.trim() && (
@@ -319,3 +368,86 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
         </div>
     );
 };
+
+// Custom hook for character limit validation
+function useCharacterLimit(maxLength: number) {
+    const [warnings, setWarnings] = useState<Map<string, string>>(new Map());
+    const [timeouts, setTimeouts] = useState<Map<string, NodeJS.Timeout>>(new Map());
+
+    const validateInput = useCallback((value: string, inputId: string): string => {
+        // Clear existing timeout for this input
+        const existingTimeout = timeouts.get(inputId);
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+        }
+
+        // Check if value exceeds limit
+        if (value.length > maxLength) {
+            const newWarnings = new Map(warnings);
+            newWarnings.set(inputId, `Limited to ${maxLength} characters`);
+            setWarnings(newWarnings);
+
+            // Auto-clear warning after 3 seconds
+            const newTimeout = setTimeout(() => {
+                setWarnings(prev => {
+                    const updated = new Map(prev);
+                    updated.delete(inputId);
+                    return updated;
+                });
+                setTimeouts(prev => {
+                    const updated = new Map(prev);
+                    updated.delete(inputId);
+                    return updated;
+                });
+            }, 3000);
+
+            const newTimeouts = new Map(timeouts);
+            newTimeouts.set(inputId, newTimeout);
+            setTimeouts(newTimeouts);
+
+            // Return truncated value
+            return value.slice(0, maxLength);
+        }
+
+        // Clear warning if it exists and value is within limit
+        if (warnings.has(inputId)) {
+            const newWarnings = new Map(warnings);
+            newWarnings.delete(inputId);
+            setWarnings(newWarnings);
+        }
+
+        return value;
+    }, [maxLength, warnings, timeouts]);
+
+    const hasWarning = useCallback((inputId: string): boolean => {
+        return warnings.has(inputId);
+    }, [warnings]);
+
+    const getWarning = useCallback((inputId: string): string => {
+        return warnings.get(inputId) || '';
+    }, [warnings]);
+
+    const clearWarning = useCallback((inputId: string) => {
+        const existingTimeout = timeouts.get(inputId);
+        if (existingTimeout) {
+            clearTimeout(existingTimeout);
+        }
+        
+        setWarnings(prev => {
+            const updated = new Map(prev);
+            updated.delete(inputId);
+            return updated;
+        });
+        setTimeouts(prev => {
+            const updated = new Map(prev);
+            updated.delete(inputId);
+            return updated;
+        });
+    }, [timeouts]);
+
+    const getWarningCount = useCallback((): number => {
+        return warnings.size;
+    }, [warnings]);
+
+    return { validateInput, hasWarning, getWarning, clearWarning, getWarningCount };
+}
