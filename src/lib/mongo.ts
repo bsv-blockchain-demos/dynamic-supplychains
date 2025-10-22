@@ -2,6 +2,7 @@ import { MongoClient, ServerApiVersion, Db, Collection, ObjectId } from "mongodb
 import dotenv from "dotenv";
 dotenv.config();
 import { actionChainValidator, locksValidator } from "../utils/mongoValidators";
+import { getRequiredEnv } from "./env";
 
 // Action-chain stage with txid including the pushdrop information
 export interface ActionChainStage {
@@ -43,8 +44,8 @@ export interface ChainTransfer {
 }
 
 // Mongo ENVs
-const uri = process.env.MONGODB_URI as string;
-const clusterName = process.env.MONGODB_CLUSTER_NAME as string;
+const uri = getRequiredEnv('MONGODB_URI');
+const clusterName = getRequiredEnv('MONGODB_CLUSTER_NAME');
 
 // Create the MongoClient
 const client = new MongoClient(uri, {

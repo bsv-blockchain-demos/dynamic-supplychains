@@ -3,6 +3,33 @@ import { connectToMongo } from "../../../lib/mongo";
 import { ObjectId } from "mongodb";
 
 /**
+ * Sanitizes a search query for use in MongoDB regex
+ * Escapes special regex characters and validates the query
+ * @param query - The raw search query
+ * @returns Sanitized query string
+ * @throws Error if query is invalid
+ */
+function sanitizeRegexQuery(query: string): string {
+    // Check maximum length
+    if (query.length > 100) {
+        throw new Error('Query exceeds maximum length of 100 characters');
+    }
+
+    // Escape special regex characters to prevent ReDoS attacks
+    // Characters that need escaping: . * + ? ^ $ { } ( ) | [ ] \
+    const escapedQuery = query.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+    // Validate that the escaped query can be used in a regex
+    try {
+        new RegExp(escapedQuery, 'i');
+    } catch (error) {
+        throw new Error('Invalid search query');
+    }
+
+    return escapedQuery;
+}
+
+/**
  * GET /api/examples
  * 
  * Fetches finalized ActionChains
@@ -23,6 +50,14 @@ export async function GET(request: NextRequest) {
         const skip = parseInt(searchParams.get('skip') || '0');
 
         if (actionChainId) {
+            // Validate ObjectId format
+            if (!ObjectId.isValid(actionChainId)) {
+                return NextResponse.json(
+                    { error: "Invalid ActionChain ID format" },
+                    { status: 400 }
+                );
+            }
+
             // Fetch specific ActionChain by ID
             const actionChain = await actionChainCollection.findOne({
                 _id: new ObjectId(actionChainId),
@@ -53,9 +88,24 @@ export async function GET(request: NextRequest) {
         // Build search filter
         const filter: any = { finalized: true };
         
-        if (query) {
-            // Create a regex for case-insensitive search
-            const searchRegex = { $regex: query, $options: 'i' };
+        // Trim query and check if it has actual content
+        const trimmedQuery = query?.trim();
+        
+        if (trimmedQuery) {
+            // Sanitize the query to prevent ReDoS attacks
+            let sanitizedQuery: string;
+            try {
+                sanitizedQuery = sanitizeRegexQuery(trimmedQuery);
+            } catch (error) {
+                const errorMessage = error instanceof Error ? error.message : 'Invalid query';
+                return NextResponse.json(
+                    { error: errorMessage },
+                    { status: 400 }
+                );
+            }
+
+            // Create a regex for case-insensitive search with sanitized query
+            const searchRegex = { $regex: sanitizedQuery, $options: 'i' };
             filter.$or = [
                 { title: searchRegex },
                 { userId: searchRegex },

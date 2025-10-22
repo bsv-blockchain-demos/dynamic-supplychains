@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { Spinner } from "../ui/spinner";
+import { toast } from "react-hot-toast";
 
 interface ActionChainCard {
     _id: string;
@@ -44,9 +45,27 @@ export const ExamplesList = () => {
                 setTotalCount(data.total);
                 setHasMore(data.hasMore);
                 setCurrentPage(page);
+            } else {
+                // Handle API errors (e.g., invalid query)
+                const errorMessage = data.error || 'Failed to fetch action chains';
+                toast.error(errorMessage, {
+                    duration: 4000,
+                    position: 'top-center',
+                });
+                console.error('API error:', errorMessage);
+                
+                // Clear search if it was invalid
+                if (response.status === 400 && query) {
+                    setSearchQuery('');
+                    setServerSearchQuery('');
+                }
             }
         } catch (error) {
             console.error('Error fetching action chains:', error);
+            toast.error('Network error. Please try again.', {
+                duration: 4000,
+                position: 'top-center',
+            });
         } finally {
             setIsLoading(false);
         }
