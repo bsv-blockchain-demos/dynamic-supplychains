@@ -45,7 +45,28 @@ export interface ChainTransfer {
 
 // Mongo ENVs
 const uri = getRequiredEnv('MONGODB_URI');
-const clusterName = getRequiredEnv('MONGODB_CLUSTER_NAME');
+
+// Extract database name from URI
+function getDatabaseNameFromUri(connectionUri: string): string {
+    try {
+        // Parse the URI to extract the database name
+        const url = new URL(connectionUri.replace('mongodb+srv://', 'http://').replace('mongodb://', 'http://'));
+        const dbName = url.pathname.slice(1).split('?')[0]; // Remove leading '/' and query params
+        
+        if (!dbName) {
+            throw new Error('Database name not found in MONGODB_URI. Please include the database name in the connection string (e.g., mongodb+srv://user:pass@cluster.mongodb.net/supplychain)');
+        }
+        
+        return dbName;
+    } catch (error) {
+        if (error instanceof Error && error.message.includes('Database name not found')) {
+            throw error;
+        }
+        throw new Error('Failed to parse MONGODB_URI. Please ensure it is a valid MongoDB connection string with a database name.');
+    }
+}
+
+const dbName = getDatabaseNameFromUri(uri);
 
 // Create the MongoClient
 const client = new MongoClient(uri, {
@@ -71,7 +92,7 @@ async function connectToMongo() {
             console.log("Connected to MongoDB!");
 
             // Initialize database and collections
-            db = client.db(clusterName);
+            db = client.db(dbName);
             // Ensure collections exist with validators applied
             const existing = new Set((await db.listCollections({}, { nameOnly: true }).toArray()).map(c => c.name));
 
