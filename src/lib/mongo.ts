@@ -1,6 +1,4 @@
 import { MongoClient, ServerApiVersion, Db, Collection, ObjectId } from "mongodb";
-import dotenv from "dotenv";
-dotenv.config();
 import { actionChainValidator, locksValidator } from "../utils/mongoValidators";
 import { getRequiredEnv } from "./env";
 
