@@ -39,6 +39,19 @@ export async function POST(request: NextRequest) {
             }, { status: 409 });
         }
 
+        // check if chainId is locked to someone else
+        const chainLock = await locksCollection.findOne({ actionChainId: new ObjectId(actionChainId) });
+        
+        if (chainLock) {
+            // Chain is locked to someone else - return the existing lock info
+            return NextResponse.json({
+                success: false,
+                locked: true,
+                actionChainId: chainLock.actionChainId.toString(),
+                message: "ActionChain is locked to someone else"
+            }, { status: 409 });
+        }
+
         // Create new lock
         const newLock = {
             userId,

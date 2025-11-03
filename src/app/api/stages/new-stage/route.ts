@@ -18,7 +18,7 @@ export async function POST(request: NextRequest) {
     try {
         const { actionChainCollection } = await connectToMongo();
         const body = await request.json();
-        
+
         const { userId, stage, isFirst, actionChainId, chainTitle } = body;
 
         // Validate required fields
@@ -68,6 +68,19 @@ export async function POST(request: NextRequest) {
                 return NextResponse.json(
                     { error: "actionChainId is required when isFirst is false" },
                     { status: 400 }
+                );
+            }
+
+            // Make sure chain hasn't been finalized yet
+            const actionChain = await actionChainCollection.findOne({
+                _id: new ObjectId(actionChainId),
+                finalized: false
+            });
+
+            if (!actionChain) {
+                return NextResponse.json(
+                    { error: "ActionChain not found or has been finalized" },
+                    { status: 404 }
                 );
             }
 

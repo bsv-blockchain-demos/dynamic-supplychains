@@ -48,6 +48,19 @@ export async function POST(request: NextRequest) {
             );
         }
 
+        // Make sure chain hasn't been finalized yet
+        const actionChain = await actionChainCollection.findOne({
+            _id: transfer.actionChainId,
+            finalized: false
+        });
+
+        if (!actionChain) {
+            return NextResponse.json(
+                { error: "ActionChain not found or has been finalized" },
+                { status: 404 }
+            );
+        }
+
         // Convert Timestamp to Date object if it's a string
         const normalizedStage = {
             ...stage,

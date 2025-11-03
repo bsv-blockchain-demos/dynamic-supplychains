@@ -55,7 +55,31 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
 
         // Extract receiver if provided
         const newReceiverPubKey = data.receiverPubKey;
-        
+
+        if (!newReceiverPubKey) {
+            // User is trying to send it to themselves
+            // Check if the user has an active lock
+            const response = await fetch('/api/lock/check', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    userId: userPubKey,
+                }),
+            });
+
+            const result = await response.json();
+
+            if (!response.ok) {
+                toast.error(result.error || 'Failed to check lock');
+                throw new Error(result.error || 'Failed to check lock');
+            }
+
+            if (result.locked) {
+                toast.error('You already have an active chain\nPlease finalize it first before sending another chain to yourself');
+                throw new Error('User already has an active chain');
+            }
+        }
+
         // Create the transaction for the new stage
         setIsBroadcasting(true);
         const result = await createContinuationToken(userWallet, data, lastStage, newReceiverPubKey);
@@ -96,7 +120,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
             }
 
             console.log('Stage added successfully:', result);
-            
+
             // Broadcast transaction with chainId in background
             (async () => {
                 try {
@@ -110,7 +134,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                     setIsBroadcasting(false);
                 }
             })();
-            
+
             // If a new receiver was specified, create another ChainTransfer record
             if (newReceiverPubKey) {
                 try {
@@ -167,7 +191,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                     icon: '✅',
                 });
             }
-            
+
             setStages([...stages, newStage]);
             setHasAddedStage(true);
         } catch (error) {
@@ -218,7 +242,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                 duration: 5000,
                 icon: '✅',
             });
-            
+
             // Go back to the list after finalizing
             setTimeout(() => {
                 onBack();
@@ -254,7 +278,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                         <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                             <span className="font-semibold whitespace-nowrap">Chain ID:</span>
                             <div className="flex-1 flex items-center gap-2 min-w-0">
-                                <Link 
+                                <Link
                                     href={`/examples/${chain.actionChainId}`}
                                     className="truncate font-mono text-xs text-blue-300 hover:text-blue-100 hover:underline cursor-pointer transition-colors"
                                 >
@@ -313,11 +337,10 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                                             toast.success(`${template.title} template selected!`);
                                         }
                                     }}
-                                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all hover:cursor-pointer ${
-                                        selectedTemplate?.title === template.title
+                                    className={`px-4 py-2 rounded-lg font-medium text-sm transition-all hover:cursor-pointer ${selectedTemplate?.title === template.title
                                             ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-300'
                                             : 'bg-white text-blue-900 hover:bg-blue-50 shadow-md hover:shadow-lg'
-                                    }`}
+                                        }`}
                                 >
                                     {template.title}
                                 </button>
@@ -373,8 +396,8 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
 
                 {/* Render existing stages */}
                 {stages.map((stage, index) => (
-                    <StageItem 
-                        key={`${stage.TransactionID}-${index}`} 
+                    <StageItem
+                        key={`${stage.TransactionID}-${index}`}
                         stage={stage}
                     />
                 ))}
@@ -389,25 +412,22 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                             }
                             setIsModalOpen(true);
                         }}
-                        className={`w-full max-w-xl bg-white rounded-xl border-2 border-dashed min-h-[280px] flex items-center justify-center group shadow-[6px_8px_16px_rgba(0,0,0,0.25)] transition-all ${
-                            userWallet
+                        className={`w-full max-w-xl bg-white rounded-xl border-2 border-dashed min-h-[280px] flex items-center justify-center group shadow-[6px_8px_16px_rgba(0,0,0,0.25)] transition-all ${userWallet
                                 ? 'border-gray-400 hover:border-blue-500 cursor-pointer hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)]'
                                 : 'border-gray-300 cursor-not-allowed opacity-60'
-                        }`}
+                            }`}
                     >
                         <div className="text-center">
-                            <div className={`text-6xl transition-colors mb-2 ${
-                                userWallet
+                            <div className={`text-6xl transition-colors mb-2 ${userWallet
                                     ? 'text-gray-300 group-hover:text-blue-400'
                                     : 'text-gray-200'
-                            }`}>
+                                }`}>
                                 +
                             </div>
-                            <p className={`transition-colors text-sm font-medium ${
-                                userWallet
+                            <p className={`transition-colors text-sm font-medium ${userWallet
                                     ? 'text-gray-400 group-hover:text-blue-500'
                                     : 'text-gray-300'
-                            }`}>
+                                }`}>
                                 Continue Chain - Add Stage
                             </p>
                             {!userWallet && (
@@ -446,8 +466,8 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
 };
 
 async function createContinuationToken(
-    userWallet: WalletClient, 
-    data: Record<string, string>, 
+    userWallet: WalletClient,
+    data: Record<string, string>,
     lastStage: ActionChainStage,
     receiverPubKey: string | undefined
 ): Promise<{ txid: string; tx: Transaction } | null> {
@@ -460,9 +480,9 @@ async function createContinuationToken(
         }
         const fullPreviousTx = Transaction.fromBEEF(previousTx.outputs[0].beef as number[]);
 
-            // Create scripts
-            const unlockingScriptFrame = await unlockPushdrop(userWallet);
-            const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
+        // Create scripts
+        const unlockingScriptFrame = await unlockPushdrop(userWallet);
+        const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
 
         // Create a preimage transaction to sign for the unlockingScript
         const preimage = new Transaction();

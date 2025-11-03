@@ -15,7 +15,7 @@ import { ObjectId } from "mongodb";
  */
 export async function POST(request: NextRequest) {
     try {
-        const { actionChainCollection, locksCollection } = await connectToMongo();
+        const { actionChainCollection, locksCollection, chainTransfersCollection } = await connectToMongo();
         const body = await request.json();
         
         const { userId, actionChainId, chainTitle } = body;
@@ -39,14 +39,29 @@ export async function POST(request: NextRequest) {
         // Verify the ActionChain exists and belongs to the user
         const actionChain = await actionChainCollection.findOne({
             _id: new ObjectId(actionChainId),
-            userId
         });
 
         if (!actionChain) {
             return NextResponse.json(
-                { error: "ActionChain not found or user mismatch" },
+                { error: "ActionChain not found" },
                 { status: 404 }
             );
+        }
+
+        const isOwn = actionChain.userId === userId;
+
+        // Could be send by someone else, check transferChain collection
+        if (!isOwn) {
+            const transferChain = await chainTransfersCollection.findOne({
+                actionChainId: new ObjectId(actionChainId),
+                receiverPubKey: userId
+            });
+            if (!transferChain) {
+                return NextResponse.json(
+                    { error: "ActionChain not found or user mismatch" },
+                    { status: 404 }
+                );
+            }
         }
 
         // Verify the user has a lock for this ActionChain

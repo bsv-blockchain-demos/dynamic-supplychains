@@ -172,6 +172,15 @@ async function connectToMongo() {
                 }
             );
 
+            // Ensure single lock per chain (prevent multiple users locking same chain)
+            await locksCollection.createIndex(
+                { actionChainId: 1 },
+                {
+                    name: "uniqueLockPerChain",
+                    unique: true,
+                }
+            );
+
             // Create indexes for chain transfers
             await chainTransfersCollection.createIndex({ receiverPubKey: 1, sentAt: -1 });
             await chainTransfersCollection.createIndex({ actionChainId: 1 });
