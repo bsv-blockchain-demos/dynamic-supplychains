@@ -43,20 +43,17 @@ export interface ChainTransfer {
     continuedAt?: Date | null;
 }
 
-// Mongo ENVs
-const uri = getRequiredEnv('MONGODB_URI');
-
 // Extract database name from URI
 function getDatabaseNameFromUri(connectionUri: string): string {
     try {
         // Parse the URI to extract the database name
         const url = new URL(connectionUri.replace('mongodb+srv://', 'http://').replace('mongodb://', 'http://'));
         const dbName = url.pathname.slice(1).split('?')[0]; // Remove leading '/' and query params
-        
+
         if (!dbName) {
             throw new Error('Database name not found in MONGODB_URI. Please include the database name in the connection string (e.g., mongodb+srv://user:pass@cluster.mongodb.net/supplychain)');
         }
-        
+
         return dbName;
     } catch (error) {
         if (error instanceof Error && error.message.includes('Database name not found')) {
@@ -66,16 +63,15 @@ function getDatabaseNameFromUri(connectionUri: string): string {
     }
 }
 
-const dbName = getDatabaseNameFromUri(uri);
+// Lazy initialization - only get env vars when actually connecting
+function getMongoConfig() {
+    const uri = getRequiredEnv('MONGODB_URI');
+    const dbName = getDatabaseNameFromUri(uri);
+    return { uri, dbName };
+}
 
-// Create the MongoClient
-const client = new MongoClient(uri, {
-    serverApi: {
-        version: ServerApiVersion.v1,
-        strict: true,
-        deprecationErrors: true,
-    }
-});
+// Client will be initialized on first connection
+let client: MongoClient | null = null;
 
 // Database and collections
 let db: Db;
@@ -87,6 +83,20 @@ let chainTransfersCollection: Collection<ChainTransfer>;
 async function connectToMongo() {
     if (!db) {
         try {
+            // Get config only when actually connecting
+            const { uri, dbName } = getMongoConfig();
+
+            // Initialize client if not already done
+            if (!client) {
+                client = new MongoClient(uri, {
+                    serverApi: {
+                        version: ServerApiVersion.v1,
+                        strict: true,
+                        deprecationErrors: true,
+                    }
+                });
+            }
+
             // Connect the client to the server
             await client.connect();
             console.log("Connected to MongoDB!");
@@ -178,14 +188,13 @@ async function connectToMongo() {
     return { db, actionChainCollection, locksCollection, chainTransfersCollection };
 }
 
-// Connect immediately when this module is imported
-connectToMongo().catch(console.error);
-
 // Handle application shutdown
 process.on('SIGINT', async () => {
     try {
-        await client.close();
-        console.log('MongoDB connection closed.');
+        if (client) {
+            await client.close();
+            console.log('MongoDB connection closed.');
+        }
         process.exit(0);
     } catch (error) {
         console.error('Error during MongoDB shutdown:', error);
