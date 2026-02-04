@@ -511,34 +511,22 @@ async function createPushdropToken(
             if (!previousTx) {
                 throw new Error("Failed to get previous transaction");
             }
-            const fullPreviousTx = Transaction.fromBEEF(previousTx.outputs[0].beef as number[]);
+            const sourceTransaction = Transaction.fromBEEF(previousTx.outputs[0].beef as number[]);
 
-            // Create scripts
-            const unlockingScriptFrame = await unlockPushdrop(userWallet);
+            // Create locking script for the new output and unlocking template for the input
+            const unlockTemplate = await unlockPushdrop(userWallet);
             const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
 
-            // Create a preimage transaction to sign for the unlockingScript
-            const preimage = new Transaction();
-            preimage.addInput({
-                sourceTransaction: fullPreviousTx,
-                sourceOutputIndex: 0,
-            });
-            preimage.addOutput({
-                satoshis: 1,
-                lockingScript: lockingScript,
-            });
+            // STEP 1: Create Action with estimated unlocking script length
+            const unlockingScriptLength = await unlockTemplate.estimateLength();
 
-            // Sign the frame with preimage to get unlockingScript
-            const actualUnlockingScript = await unlockingScriptFrame.sign(preimage, 0);
-
-            // Create the new pushdrop token action
-            const pushDropAction = await userWallet.createAction({
+            const actionRes = await userWallet.createAction({
                 description: "Create next pushdrop token",
                 inputBEEF: previousTx.outputs[0].beef,
                 inputs: [
                     {
                         inputDescription: "Previous pushdrop token",
-                        unlockingScript: actualUnlockingScript.toHex(),
+                        unlockingScriptLength: unlockingScriptLength,
                         outpoint: `${lastStage.TransactionID}.0`
                     }
                 ],
@@ -554,13 +542,45 @@ async function createPushdropToken(
                 }
             });
 
-            if (!pushDropAction || !pushDropAction.txid) {
-                throw new Error("Failed to create pushdrop action");
+            if (!actionRes.signableTransaction) {
+                throw new Error("Failed to create signable transaction");
             }
 
-            const tx = Transaction.fromBEEF(pushDropAction.tx as number[]);
+            // STEP 2: Sign - Generate actual unlocking scripts using BSV SDK
+            const reference = actionRes.signableTransaction.reference;
+            const txToSign = Transaction.fromBEEF(actionRes.signableTransaction.tx);
 
-            return { txid: pushDropAction.txid, tx };
+            // Attach template and source transaction to input
+            txToSign.inputs[0].unlockingScriptTemplate = unlockTemplate;
+            txToSign.inputs[0].sourceTransaction = sourceTransaction;
+
+            // Generate actual unlocking scripts
+            await txToSign.sign();
+
+            const unlockingScript = txToSign.inputs[0].unlockingScript;
+            if (!unlockingScript) {
+                throw new Error('Missing unlocking script after signing');
+            }
+
+            // STEP 3: Sign Action - Finalize with actual unlocking scripts
+            const action = await userWallet.signAction({
+                reference: reference,
+                spends: {
+                    '0': { unlockingScript: unlockingScript.toHex() }
+                }
+            });
+
+            if (!action.tx) {
+                throw new Error('Failed to sign action');
+            }
+
+            if (!action.txid) {
+                throw new Error("Failed to get transaction ID");
+            }
+
+            const tx = Transaction.fromAtomicBEEF(action.tx);
+
+            return { txid: action.txid, tx };
         } catch (error) {
             console.error("Error creating pushdrop token:", error);
             throw error;
