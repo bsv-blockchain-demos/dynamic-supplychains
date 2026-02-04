@@ -82,7 +82,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
 
         // Create the transaction for the new stage
         setIsBroadcasting(true);
-        const result = await createContinuationToken(userWallet, data, lastStage, newReceiverPubKey);
+        const result = await createContinuationToken(userWallet, data, lastStage, newReceiverPubKey, chain.senderPubKey);
 
         if (!result || !result.txid) {
             setIsBroadcasting(false);
@@ -469,7 +469,8 @@ async function createContinuationToken(
     userWallet: WalletClient,
     data: Record<string, string>,
     lastStage: ActionChainStage,
-    receiverPubKey: string | undefined
+    receiverPubKey: string | undefined,
+    senderPubKey: string
 ): Promise<{ txid: string; tx: Transaction } | null> {
     try {
         // Get the transactionID from the last stage to unlock
@@ -481,7 +482,7 @@ async function createContinuationToken(
         const sourceTransaction = Transaction.fromBEEF(previousTx.outputs[0].beef as number[]);
 
         // Create locking script for the new output and unlocking template for the input
-        const unlockTemplate = await unlockPushdrop(userWallet);
+        const unlockTemplate = await unlockPushdrop(userWallet, senderPubKey);
         const lockingScript = await createPushdrop(userWallet, data, receiverPubKey);
 
         // STEP 1: Create Action with estimated unlocking script length
@@ -506,6 +507,7 @@ async function createContinuationToken(
             ],
             options: {
                 randomizeOutputs: false,
+                acceptDelayedBroadcast: false,
             }
         });
 

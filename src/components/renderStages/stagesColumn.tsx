@@ -486,6 +486,7 @@ async function createPushdropToken(
                 ],
                 options: {
                     randomizeOutputs: false,
+                    acceptDelayedBroadcast: false,
                 }
             });
 
@@ -539,6 +540,7 @@ async function createPushdropToken(
                 ],
                 options: {
                     randomizeOutputs: false,
+                    acceptDelayedBroadcast: false,
                 }
             });
 
