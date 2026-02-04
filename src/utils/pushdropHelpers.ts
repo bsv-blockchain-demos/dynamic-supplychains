@@ -13,7 +13,7 @@ export async function createPushdrop(wallet: WalletInterface, data: any, receive
     try {
         // Use provided receiver or fallback to "self"
         const RECEIVER = receiverPubKey || "self";
-        const forSelf = !receiverPubKey; // If no receiver provided, it's for self
+        const forSelf = receiverPubKey ? false : true; // If no receiver provided, it's for self
 
         // Encrypt the data using a symmetricKey
         // To decrypt the info you simply need the RECEIVER key
@@ -47,18 +47,16 @@ export async function createPushdrop(wallet: WalletInterface, data: any, receive
 // Only the wallet with the correct key can unlock a pushdrop locked to them
 export async function unlockPushdrop(wallet: WalletInterface, senderPubKey?: string) {
     try {
-        // Always use "self" - the wallet proves you're the legitimate recipient
-        const RECEIVER = senderPubKey || "self";
+        const SENDER = senderPubKey || "self";
 
         // Unlock a pushdrop token
         const pushdrop = new PushDrop(wallet);
         const unlockingScriptFrame = pushdrop.unlock(
             customInstructions.protocolID,
             customInstructions.keyID,
-            RECEIVER, // Counterparty - self unless received
-            "all",
+            SENDER, // Counterparty - sender's public key or self
+            "single",
             false,
-            1,
         );
 
         return unlockingScriptFrame;
