@@ -74,29 +74,30 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
 
         // Extract receiver if provided
         const receiverPubKey = data.receiverPubKey;
-        
+
         // TransactionID will come from the wallet create pushdrop
         setIsBroadcasting(true);
-        const result = await createPushdropToken(userWallet, data, isFirst, lastStage, receiverPubKey);
-
-        if (!result || !result.txid) {
-            setIsBroadcasting(false);
-            toast.error('Failed to create pushdrop token');
-            throw new Error("Failed to create pushdrop token");
-        }
-
-        const { txid, tx } = result;
-
-        // Create new stage object
-        const newStage: ActionChainStage = {
-            title: data.title,
-            imageURL: data.imageURL,
-            Timestamp: new Date(),
-            TransactionID: txid,
-        };
-
-        // Save stage to database
         try {
+            const tokenResult = await createPushdropToken(userWallet, data, isFirst, lastStage, receiverPubKey);
+
+            if (!tokenResult || !tokenResult.txid) {
+                setIsBroadcasting(false);
+                toast.error('Failed to create pushdrop token');
+                throw new Error("Failed to create pushdrop token");
+            }
+
+            const { txid, tx } = tokenResult;
+
+            // Create new stage object
+            const newStage: ActionChainStage = {
+                title: data.title,
+                imageURL: data.imageURL,
+                Timestamp: new Date(),
+                TransactionID: txid,
+            };
+
+            // Save stage to database
+
             const response = await fetch('/api/stages/new-stage', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -117,10 +118,10 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             }
 
             console.log('Stage saved successfully:', result);
-            
+
             // Get the actionChainId for broadcasting
             const currentActionChainId = result.actionChainId || actionChainId;
-            
+
             // Broadcast transaction with chainId in background
             if (currentActionChainId && tx) {
                 (async () => {
@@ -138,7 +139,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             } else {
                 setIsBroadcasting(false);
             }
-            
+
             // If a receiver was specified, send it to them and reset the page
             if (receiverPubKey && currentActionChainId) {
                 try {
@@ -165,7 +166,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     console.error('Error creating transfer record:', error);
                     toast.error('Failed to send stage to receiver');
                 }
-                
+
                 // Reset the page to start fresh since this chain is now sent to someone else
                 setStages([]);
                 setActionChainId(null);
@@ -173,12 +174,12 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 setSelectedTemplate(null);
                 return; // Don't continue with the rest of the logic
             }
-            
+
             // If no receiver, this is for the user themselves
             // Save the actionChainId and create a lock
             if (isFirst) {
                 setActionChainId(result.actionChainId);
-                
+
                 const lockResponse = await fetch('/api/lock', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
@@ -192,15 +193,17 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     toast.error('Failed to create lock for action chain');
                 }
             }
-            
+
             toast.success(`Stage "${data.title}" added successfully!`);
-            
+
             // Add new stage to the BOTTOM of the array (append)
             setStages([...stages, newStage]);
         } catch (error) {
             console.error('Error saving stage:', error);
             toast.error('An error occurred while saving the stage');
             throw error;
+        } finally {
+            setIsBroadcasting(false);
         }
     };
 
@@ -245,7 +248,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 duration: 5000,
                 icon: '✅',
             });
-            
+
             // Reset state for new chain
             setStages([]);
             setActionChainId(null);
@@ -288,13 +291,13 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                         placeholder="Choose a template or enter your own title"
                         className="w-full px-4 py-3 border-2 border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-400 focus:border-transparent outline-none transition text-black font-medium bg-white shadow-lg"
                     />
-                    
+
                     {/* Chain ID Display */}
                     {actionChainId && (
                         <div className="mt-3 p-3 bg-blue-900/50 rounded-lg border border-blue-700 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
                             <div className="flex-1 min-w-0">
                                 <span className="text-blue-100 text-xs font-semibold mr-2">Chain ID:</span>
-                                <Link 
+                                <Link
                                     href={`/examples/${actionChainId}`}
                                     className="font-mono text-blue-300 text-xs break-all hover:text-blue-100 hover:underline cursor-pointer transition-colors"
                                 >
@@ -389,8 +392,8 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
 
                 {/* Render existing stages */}
                 {stages.map((stage, index) => (
-                    <StageItem 
-                        key={`${stage.TransactionID}-${index}`} 
+                    <StageItem
+                        key={`${stage.TransactionID}-${index}`}
                         stage={stage}
                     />
                 ))}
@@ -405,25 +408,22 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                             }
                             setIsModalOpen(true);
                         }}
-                        className={`w-full max-w-xl bg-white rounded-xl border-2 border-dashed min-h-[280px] flex items-center justify-center group shadow-[6px_8px_16px_rgba(0,0,0,0.25)] transition-all ${
-                            userWallet
+                        className={`w-full max-w-xl bg-white rounded-xl border-2 border-dashed min-h-[280px] flex items-center justify-center group shadow-[6px_8px_16px_rgba(0,0,0,0.25)] transition-all ${userWallet
                                 ? 'border-gray-400 hover:border-blue-500 cursor-pointer hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)]'
                                 : 'border-gray-300 cursor-not-allowed opacity-60'
-                        }`}
+                            }`}
                     >
                         <div className="text-center">
-                            <div className={`text-6xl transition-colors mb-2 ${
-                                userWallet
+                            <div className={`text-6xl transition-colors mb-2 ${userWallet
                                     ? 'text-gray-300 group-hover:text-blue-400'
                                     : 'text-gray-200'
-                            }`}>
+                                }`}>
                                 +
                             </div>
-                            <p className={`transition-colors text-sm font-medium ${
-                                userWallet
+                            <p className={`transition-colors text-sm font-medium ${userWallet
                                     ? 'text-gray-400 group-hover:text-blue-500'
                                     : 'text-gray-300'
-                            }`}>
+                                }`}>
                                 Add Stage
                             </p>
                             <p className="text-xs text-gray-400 mt-1">
@@ -465,9 +465,9 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
 };
 
 async function createPushdropToken(
-    userWallet: WalletClient, 
-    data: Record<string, string>, 
-    isFirst: boolean, 
+    userWallet: WalletClient,
+    data: Record<string, string>,
+    isFirst: boolean,
     lastStage: ActionChainStage | null,
     receiverPubKey: string | undefined
 ): Promise<{ txid: string; tx: Transaction } | null> {
@@ -588,7 +588,7 @@ async function createPushdropToken(
             throw error;
         }
     }
-    
+
     // If neither params were valid or provided return null
     return null;
 }

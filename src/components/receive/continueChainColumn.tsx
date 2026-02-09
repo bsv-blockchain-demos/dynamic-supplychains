@@ -82,26 +82,26 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
 
         // Create the transaction for the new stage
         setIsBroadcasting(true);
-        const result = await createContinuationToken(userWallet, data, lastStage, newReceiverPubKey, chain.senderPubKey);
-
-        if (!result || !result.txid) {
-            setIsBroadcasting(false);
-            toast.error('Failed to create pushdrop token');
-            throw new Error("Failed to create pushdrop token");
-        }
-
-        const { txid, tx } = result;
-
-        // Create new stage object
-        const newStage: ActionChainStage = {
-            title: data.title,
-            imageURL: data.imageURL,
-            Timestamp: new Date(),
-            TransactionID: txid,
-        };
-
-        // Save stage to the chain via the continue API
         try {
+            const tokenResult = await createContinuationToken(userWallet, data, lastStage, newReceiverPubKey, chain.senderPubKey);
+
+            if (!tokenResult || !tokenResult.txid) {
+                setIsBroadcasting(false);
+                toast.error('Failed to create pushdrop token');
+                throw new Error("Failed to create pushdrop token");
+            }
+
+            const { txid, tx } = tokenResult;
+
+            // Create new stage object
+            const newStage: ActionChainStage = {
+                title: data.title,
+                imageURL: data.imageURL,
+                Timestamp: new Date(),
+                TransactionID: txid,
+            };
+
+            // Save stage to the chain via the continue API
             const response = await fetch('/api/chains/continue', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
@@ -198,6 +198,8 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
             console.error('Error adding stage:', error);
             toast.error('An error occurred while adding the stage');
             throw error;
+        } finally {
+            setIsBroadcasting(false);
         }
     };
 
@@ -338,8 +340,8 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                                         }
                                     }}
                                     className={`px-4 py-2 rounded-lg font-medium text-sm transition-all hover:cursor-pointer ${selectedTemplate?.title === template.title
-                                            ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-300'
-                                            : 'bg-white text-blue-900 hover:bg-blue-50 shadow-md hover:shadow-lg'
+                                        ? 'bg-blue-500 text-white shadow-lg ring-2 ring-blue-300'
+                                        : 'bg-white text-blue-900 hover:bg-blue-50 shadow-md hover:shadow-lg'
                                         }`}
                                 >
                                     {template.title}
@@ -413,20 +415,20 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                             setIsModalOpen(true);
                         }}
                         className={`w-full max-w-xl bg-white rounded-xl border-2 border-dashed min-h-[280px] flex items-center justify-center group shadow-[6px_8px_16px_rgba(0,0,0,0.25)] transition-all ${userWallet
-                                ? 'border-gray-400 hover:border-blue-500 cursor-pointer hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)]'
-                                : 'border-gray-300 cursor-not-allowed opacity-60'
+                            ? 'border-gray-400 hover:border-blue-500 cursor-pointer hover:shadow-[8px_12px_24px_rgba(0,0,0,0.3)]'
+                            : 'border-gray-300 cursor-not-allowed opacity-60'
                             }`}
                     >
                         <div className="text-center">
                             <div className={`text-6xl transition-colors mb-2 ${userWallet
-                                    ? 'text-gray-300 group-hover:text-blue-400'
-                                    : 'text-gray-200'
+                                ? 'text-gray-300 group-hover:text-blue-400'
+                                : 'text-gray-200'
                                 }`}>
                                 +
                             </div>
                             <p className={`transition-colors text-sm font-medium ${userWallet
-                                    ? 'text-gray-400 group-hover:text-blue-500'
-                                    : 'text-gray-300'
+                                ? 'text-gray-400 group-hover:text-blue-500'
+                                : 'text-gray-300'
                                 }`}>
                                 Continue Chain - Add Stage
                             </p>
