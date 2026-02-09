@@ -34,6 +34,40 @@ async function createSourceTransaction(pushdropData: any, receiverPubKey?: strin
   return { wallet, sourceTransaction, mockChain };
 }
 
+async function createCrossWalletSourceTransaction(pushdropData: any) {
+  const senderWallet = await makeWallet();
+  const receiverWallet = await makeWallet();
+
+  const { publicKey: receiverPubKey } = await receiverWallet.getPublicKey({ identityKey: true });
+  const { publicKey: senderPubKey } = await senderWallet.getPublicKey({ identityKey: true });
+
+  // Create the PushDrop locking script (sender -> receiver)
+  const lockingScript = await createPushdrop(senderWallet, pushdropData, receiverPubKey);
+
+  // Create a source transaction with the PushDrop output
+  const sourceTransaction = new Transaction();
+  sourceTransaction.addInput({
+    sourceTXID: '0000000000000000000000000000000000000000000000000000000000000000',
+    sourceOutputIndex: 0,
+    unlockingScript: UnlockingScript.fromASM('01')
+  });
+  sourceTransaction.addOutput({
+    satoshis: 1,
+    lockingScript
+  });
+  // Add a P2PKH output for fees
+  sourceTransaction.addOutput({
+    satoshis: 30,
+    lockingScript: new P2PKH().lock(key.toAddress())
+  });
+
+  const txid = sourceTransaction.id('hex');
+  sourceTransaction.merklePath = new MerklePath(0, [[{ txid: true, offset: 0, hash: txid }]]);
+  const mockChain = new MockChain({ blockheaders: [txid] });
+
+  return { senderWallet, receiverWallet, senderPubKey, receiverPubKey, sourceTransaction, mockChain };
+}
+
 describe('PushDrop Transaction Tests', () => {
   
   describe('createPushdrop', () => {
@@ -68,6 +102,37 @@ describe('PushDrop Transaction Tests', () => {
       // Get the unlocking script template
       const unlockingScriptTemplate = await unlockPushdrop(wallet);
       
+      tx.addInput({
+        sourceTransaction,
+        sourceOutputIndex: 0,
+        unlockingScriptTemplate
+      });
+      tx.addInput({
+        sourceTransaction,
+        sourceOutputIndex: 1,
+        unlockingScriptTemplate: new P2PKH().unlock(key)
+      });
+      tx.addOutput({
+        change: true,
+        lockingScript: new P2PKH().lock(key.toAddress())
+      });
+
+      await tx.fee();
+      await tx.sign();
+
+      const passes = await tx.verify(mockChain);
+      expect(passes).toBe(true);
+    });
+
+    it('should unlock and spend a PushDrop output sent from another wallet', async () => {
+      const testData = { item: 'Product X', stage: 'Received', ref: 'CROSSWALLET-1' };
+      const { receiverWallet, senderPubKey, sourceTransaction, mockChain } = await createCrossWalletSourceTransaction(testData);
+
+      const tx = new Transaction();
+
+      // Receiver must unlock with counterparty = sender identity pubkey
+      const unlockingScriptTemplate = await unlockPushdrop(receiverWallet, senderPubKey);
+
       tx.addInput({
         sourceTransaction,
         sourceOutputIndex: 0,

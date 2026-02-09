@@ -12,13 +12,18 @@ const customInstructions = {
 export async function createPushdrop(wallet: WalletInterface, data: any, receiverPubKey?: string): Promise<LockingScript> {
     try {
         // Use provided receiver or fallback to "self"
-        const RECEIVER = receiverPubKey || "self";
-        const forSelf = receiverPubKey ? false : true; // If no receiver provided, it's for self
+        const normalizedReceiverPubKey = receiverPubKey?.trim().replace(/^0x/i, '') || undefined;
+        const RECEIVER = normalizedReceiverPubKey || "self";
+        const forSelf = normalizedReceiverPubKey ? false : true; // If no receiver provided, it's for self
+
+        const encryptionPubKey = normalizedReceiverPubKey
+            ? normalizedReceiverPubKey
+            : (await wallet.getPublicKey({ identityKey: true })).publicKey;
 
         // Encrypt the data using a symmetricKey
         // To decrypt the info you simply need the RECEIVER key
         // We hash the receiver because the key must be 32 bytes
-        const receiverBytes = Utils.toArray(RECEIVER, 'utf8');
+        const receiverBytes = Utils.toArray(encryptionPubKey, 'hex');
         const keyBytes = Hash.sha256(receiverBytes);
         const key = new SymmetricKey(keyBytes);
 
@@ -47,7 +52,9 @@ export async function createPushdrop(wallet: WalletInterface, data: any, receive
 // Only the wallet with the correct key can unlock a pushdrop locked to them
 export async function unlockPushdrop(wallet: WalletInterface, senderPubKey?: string) {
     try {
-        const SENDER = senderPubKey || "self";
+        const normalizedSenderPubKey = senderPubKey?.trim().replace(/^0x/i, '') || undefined;
+        const SENDER = normalizedSenderPubKey || "self";
+        const forSelf = normalizedSenderPubKey ? false : true;
 
         // Unlock a pushdrop token
         const pushdrop = new PushDrop(wallet);
@@ -56,7 +63,7 @@ export async function unlockPushdrop(wallet: WalletInterface, senderPubKey?: str
             customInstructions.keyID,
             SENDER, // Counterparty - sender's public key or self
             "single",
-            false,
+            forSelf,
         );
 
         return unlockingScriptFrame;
