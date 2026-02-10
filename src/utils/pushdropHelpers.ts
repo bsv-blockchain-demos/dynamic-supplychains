@@ -15,6 +15,7 @@ export async function createPushdrop(wallet: WalletInterface, data: any, receive
         const normalizedReceiverPubKey = receiverPubKey?.trim().replace(/^0x/i, '') || undefined;
         const RECEIVER = normalizedReceiverPubKey || "self";
         const forSelf = normalizedReceiverPubKey ? false : true; // If no receiver provided, it's for self
+        console.log("LockingScript with receiver: ", RECEIVER);
 
         const encryptionPubKey = normalizedReceiverPubKey
             ? normalizedReceiverPubKey
@@ -54,6 +55,7 @@ export async function unlockPushdrop(wallet: WalletInterface, senderPubKey?: str
     try {
         const normalizedSenderPubKey = senderPubKey?.trim().replace(/^0x/i, '') || undefined;
         const SENDER = normalizedSenderPubKey || "self";
+        console.log("UnlockTemplate with sender: ", SENDER);
 
         // Unlock a pushdrop token
         const pushdrop = new PushDrop(wallet);
