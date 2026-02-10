@@ -54,7 +54,6 @@ export async function unlockPushdrop(wallet: WalletInterface, senderPubKey?: str
     try {
         const normalizedSenderPubKey = senderPubKey?.trim().replace(/^0x/i, '') || undefined;
         const SENDER = normalizedSenderPubKey || "self";
-        const forSelf = normalizedSenderPubKey ? false : true;
 
         // Unlock a pushdrop token
         const pushdrop = new PushDrop(wallet);
@@ -62,8 +61,8 @@ export async function unlockPushdrop(wallet: WalletInterface, senderPubKey?: str
             customInstructions.protocolID,
             customInstructions.keyID,
             SENDER, // Counterparty - sender's public key or self
-            "single",
-            forSelf,
+            "all", // SignOutputs
+            false, // AnyoneCanPay
         );
 
         return unlockingScriptFrame;
