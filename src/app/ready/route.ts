@@ -1,20 +1,16 @@
 import { NextResponse } from 'next/server'
-import { MongoClient } from 'mongodb'
+import { connectToMongo } from '@/lib/mongo'
 
-// checks db liveness
+// checks db liveness using the shared MongoDB connection
 export async function GET() {
-  const { MONGODB_URI } = process.env
-  const client = new MongoClient(MONGODB_URI!)
   try {
-    await client.connect()
-    await client.db().command({ ping: 1 })
+    const { db } = await connectToMongo()
+    await db.command({ ping: 1 })
     return NextResponse.json({ status: 'ready' })
   } catch (err) {
     return NextResponse.json(
       { status: 'not ready', error: (err as Error).message },
       { status: 503 }
     )
-  } finally {
-    await client.close()
   }
 }
