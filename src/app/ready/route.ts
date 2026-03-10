@@ -1,10 +1,9 @@
 import { NextResponse } from 'next/server'
 import { MongoClient } from 'mongodb'
 
-const { MONGODB_URI } = process.env
-
 // checks db liveness
 export async function GET() {
+  const { MONGODB_URI } = process.env
   const client = new MongoClient(MONGODB_URI!)
   try {
     await client.connect()
