@@ -12,6 +12,7 @@ export const actionChainValidator = {
       updatedAt: { bsonType: ["date", "null"] },
       finalized: { bsonType: ["bool", "null"] },
       finalizedAt: { bsonType: ["date", "null"] },
+      isPrivate: { bsonType: ["bool", "null"] },
       stages: {
         bsonType: "array",
         minItems: 1,

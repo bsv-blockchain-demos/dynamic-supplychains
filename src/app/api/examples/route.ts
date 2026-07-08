@@ -39,6 +39,8 @@ function sanitizeRegexQuery(query: string): string {
  * - query?: string - Search query for title, userId, firstStage, lastStage
  * - limit?: number - Number of results to return (default: 50)
  * - skip?: number - Number of results to skip for pagination (default: 0)
+ * - viewer?: string - The connected wallet's public key; private chains are
+ *   only returned when the viewer is their creator
  */
 export async function GET(request: NextRequest) {
     try {
@@ -48,6 +50,7 @@ export async function GET(request: NextRequest) {
         const query = searchParams.get('query');
         const limit = parseInt(searchParams.get('limit') || '50');
         const skip = parseInt(searchParams.get('skip') || '0');
+        const viewer = searchParams.get('viewer');
 
         if (actionChainId) {
             // Validate ObjectId format
@@ -64,7 +67,8 @@ export async function GET(request: NextRequest) {
                 finalized: true
             });
 
-            if (!actionChain) {
+            // Respond identically for private chains so their existence isn't leaked
+            if (!actionChain || (actionChain.isPrivate && actionChain.userId !== viewer)) {
                 return NextResponse.json(
                     { error: "ActionChain not found or not finalized" },
                     { status: 404 }
@@ -82,12 +86,16 @@ export async function GET(request: NextRequest) {
                     updatedAt: actionChain.updatedAt,
                     finalized: actionChain.finalized,
                     finalizedAt: actionChain.finalizedAt,
+                    isPrivate: actionChain.isPrivate ?? false,
                 }
             }, { status: 200 });
         }
 
-        // Build search filter
-        const filter: any = { finalized: true };
+        // Build search filter. Private chains are hidden unless the viewer created them.
+        const visibilityClause = viewer
+            ? { $or: [{ isPrivate: { $ne: true } }, { userId: viewer }] }
+            : { isPrivate: { $ne: true } };
+        const filter: any = { $and: [{ finalized: true }, visibilityClause] };
         
         // Trim query and check if it has actual content
         const trimmedQuery = query?.trim();
@@ -107,11 +115,13 @@ export async function GET(request: NextRequest) {
 
             // Create a regex for case-insensitive search with sanitized query
             const searchRegex = { $regex: sanitizedQuery, $options: 'i' };
-            filter.$or = [
-                { title: searchRegex },
-                { userId: searchRegex },
-                { 'stages.title': searchRegex }
-            ];
+            filter.$and.push({
+                $or: [
+                    { title: searchRegex },
+                    { userId: searchRegex },
+                    { 'stages.title': searchRegex }
+                ]
+            });
         }
 
         // Get total count for pagination
@@ -133,6 +143,7 @@ export async function GET(request: NextRequest) {
             stageCount: chain.stages.length,
             createdAt: chain.createdAt,
             finalizedAt: chain.finalizedAt,
+            isPrivate: chain.isPrivate ?? false,
             // Get first and last stage for preview
             firstStage: chain.stages[0]?.title,
             lastStage: chain.stages[chain.stages.length - 1]?.title,

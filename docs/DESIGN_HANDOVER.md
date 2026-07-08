@@ -9,7 +9,7 @@
 Perform a **visual + UX overhaul** of this existing Next.js demo. **Presentation only — no logic, data, or API changes.** Specifically:
 
 1. **Add a new landing page** that explains what the demo does.
-2. **Reskin** the three existing pages (Create, Receive, Examples + Example detail) and their modals into one cohesive, polished design system.
+2. **Reskin** the three existing pages (Create, Receive, Directory + chain detail) and their modals into one cohesive, polished design system.
 3. **Make it self-explanatory** — weave explanatory copy, guides, and contextual help *throughout* so a first-time, non-technical visitor understands what's happening and how to use the demo at every step (see §8).
 
 This is a facelift *within* the existing framework — not a rewrite, not a re-platform.
@@ -18,9 +18,9 @@ This is a facelift *within* the existing framework — not a rewrite, not a re-p
 
 ## 2. What the product is (design the right story)
 
-**Dynamic Digital Product Passport** — *build any custom supply chain lifecycle.* A flexible, fully-customisable engine (built on Bitcoin SV; also called "Dynamic Supply Chain") for composing a verifiable product passport for *practically any* product journey. Users build free-form **stages**, each carrying arbitrary metadata, recorded as an immutable, encrypted on-chain transaction. Each finalized chain *is* the passport — an end-to-end record of a product's life, custody, and provenance. It was built to **supersede bespoke, industry-specific supply-chain tools**: one adaptable engine instead of one codebase per vertical.
+**Dynamic Supply Chain** — *build any custom supply chain lifecycle.* A flexible, fully-customisable engine (built on Bitcoin SV) for composing a verifiable supply chain record for *practically any* product journey. Users build free-form **stages**, each carrying arbitrary metadata, recorded as an immutable, encrypted on-chain transaction. Each finalized chain is an end-to-end record of a product's life, custody, and provenance. It was built to **supersede bespoke, industry-specific supply-chain tools**: one adaptable engine instead of one codebase per vertical.
 
-**The design should communicate:** trust, provenance, verifiability, and *flexibility across industries*. Avoid looking like a single-vertical app — it's a passport engine that fits agriculture, manufacturing, aviation, pharma, logistics, anything.
+**The design should communicate:** trust, provenance, verifiability, and *flexibility across industries*. Avoid looking like a single-vertical app — it's a supply chain engine that fits agriculture, manufacturing, aviation, pharma, logistics, anything.
 
 (See `README.md` for full product detail. Do not change product behaviour.)
 
@@ -83,7 +83,7 @@ The look reads as a generic gradient app. The opportunity is to make it feel lik
 
 **Recommended moves (apply your own taste on the details):**
 1. **Build a real design system in `@theme`** (`globals.css`): brand colour tokens, surface/elevation scale, a standard radius scale, a standard shadow scale, and font tokens — instead of ad-hoc per-component classes. **Align this with shadcn's CSS-variable theming** so shadcn components and your own utility classes read from one source of truth. Then *use the tokens everywhere*.
-2. **Evolve the wall-to-wall gradient.** Reserve a branded/gradient treatment for *moments* (landing hero, page headers) and give working surfaces (builder, inbox, gallery) a calmer canvas so content and data breathe. Reduce visual noise; let the passport content be the hero.
+2. **Evolve the wall-to-wall gradient.** Reserve a branded/gradient treatment for *moments* (landing hero, page headers) and give working surfaces (builder, inbox, gallery) a calmer canvas so content and data breathe. Reduce visual noise; let the chain content be the hero.
 3. **Build on shadcn/ui primitives** and reuse them everywhere: `Button` (variants), `Card`, `Badge`, `Input` + `Form` field, `Dialog` (modals), `Tooltip` + `Popover` + `HoverCard` (the §8 guidance UX), `Tabs` / `Accordion` (how-it-works, metadata grouping), `Sheet` (the slide-out stage panel). Add app-specific presentational components on top — `EmptyState`, `StatPill` / metadata row, `Timeline` for the stage flow — composed from shadcn + the Tailwind tokens.
 4. **Replace emoji status with consistent `lucide-react` icons** (lock / unlock / send / alert / refresh / copy, etc.) for a professional, uniform feel.
 5. **Wire up Geist** (remove the Arial override) — a free typographic upgrade. Use Geist Mono for hashes/keys/JSON.
@@ -98,24 +98,24 @@ For each surface: **keep** = must still work/render; **goals** = the visual/UX u
 
 ### A. NEW — Landing page  (`/`, per §4)
 A static, presentational page (can be a server component; no wallet required to view). Suggested sections:
-- **Hero:** product name (**Dynamic Digital Product Passport**) + tagline **"Build any custom supply chain lifecycle."**, primary CTA → builder, secondary CTA → Examples.
+- **Hero:** product name (**Dynamic Supply Chain**) + tagline **"Build any custom supply chain lifecycle."**, primary CTA → builder, secondary CTA → Directory.
 - **What it does** — short, plain-language explanation.
-- **How it works** — 3–4 steps: *Create a chain → Add stages with custom data → Hand off between parties → Finalize the passport*.
+- **How it works** — 3–4 steps: *Create a chain → Add stages with custom data → Hand off between parties → Finalize the chain*.
 - **Flexibility / use-cases** — surface the three built-in templates (agriculture "Soil to Table", "Plastic Product Lifecycle", "Aircraft Parts Lifecycle") as proof it fits any vertical.
 - **On-chain trust** — PushDrop on BSV, each stage encrypted to the next party, verifiable provenance, UTXO-chained.
 - **Footer** — keep the demo disclaimer (encryption is not production-secure) and a link to the README/repo.
 
 ### B. Create / Builder  (`src/app/page.tsx` → `src/app/create/page.tsx`; `src/components/renderStages/stagesColumn.tsx`; `stageItem.tsx`)
 - **Keep:** chain-title input, chain-ID display + copy button, template selector chips, the dashed "Add Stage" card (with wallet-gated disabled state), the green Finalize button, the max-8-stages handling, and all wallet-connection gating.
-- **Goals:** make it read as "build a passport." Give the vertical stage list real rhythm — consider a proper **vertical timeline** treatment connecting stages. Refine the dashed add-card and the template chips. Tidy the chain-ID block.
+- **Goals:** make it read as "build a supply chain." Give the vertical stage list real rhythm — consider a proper **vertical timeline** treatment connecting stages. Refine the dashed add-card and the template chips. Tidy the chain-ID block.
 
 ### C. Receive  (`src/app/receive/page.tsx`; `src/components/receive/receivedChainsList.tsx`; `continueChainColumn.tsx`)
 - **Keep:** the list ↔ detail two-state flow, the "continued" badge, back button, template selector, finalize button, the yellow/green info messages, and the "view other chains" action.
 - **Goals:** polished **inbox** cards; clearer affordance for "continue (keep)" vs "forward (send on)"; bring the dark gray gradient detail box (`from-gray-800 to-gray-900`) into the new system.
 
-### D. Examples gallery + detail  (`src/app/examples/page.tsx`, `examplesList.tsx`; `src/app/examples/[id]/page.tsx`, `singleExample.tsx`)
+### D. Directory gallery + detail  (`src/app/directory/page.tsx`, `examplesList.tsx`; `src/app/directory/[id]/page.tsx`, `singleExample.tsx`)
 - **Keep:** search input + clear, pagination (21/page), the empty / no-results / loading states, the read-only notice on detail, and the full stage rendering.
-- **Goals:** present the gallery as a **passport directory**. Stronger cards (title, stage count, creator, first→last flow, finalized date). Refined search. Detail view = stage timeline + a clear "verified on-chain" treatment for TXIDs.
+- **Goals:** present the gallery as a **supply chain directory**. Stronger cards (title, stage count, creator, first→last flow, finalized date). Refined search. Detail view = stage timeline + a clear "verified on-chain" treatment for TXIDs.
 
 ### E. Modals & shared
 - **`createStageModal.tsx`** — **keep** every field (stage title, image URL, receiver public key, dynamic key/value metadata rows with add/remove, the collapsible template suggestions, all validation/warning states, the "broadcasting…" state, the missing-title guard). Reskin to the new modal shell; swap ⚠️ emoji for SVG; group fields more clearly.
@@ -133,14 +133,14 @@ A static, presentational page (can be a server component; no wallet required to 
 **Mechanisms to use (presentational/copy only — no logic changes):**
 - **Plain-language first, jargon second.** Lead with everyday wording; show the technical term as secondary — e.g. "Send to — the recipient's wallet ID *(public key)*".
 - **Contextual help on jargon.** Info tooltips / popovers (hover **and** keyboard/tap accessible) on terms like *public key, receiver, PushDrop, lock, transfer, finalize, transaction ID (TXID), on-chain, encrypted, overlay*. One or two plain sentences each.
-- **Rich empty states that coach the next action.** Every empty/zero state explains what the area is and the single next step — e.g. empty builder → "A passport is a chain of stages. Add your first stage to begin."; empty inbox → what "received chains" are and how one arrives.
+- **Rich empty states that coach the next action.** Every empty/zero state explains what the area is and the single next step — e.g. empty builder → "A supply chain is built from stages. Add your first stage to begin."; empty inbox → what "received chains" are and how one arrives.
 - **Journey framing in the builder.** Make *create → add stages → hand off → finalize* legible as a flow (a stepper, helper captions, or a "what's next" hint). Explain the 2-stage minimum and 8-stage max **in context**, not just by disabling a button.
 - **"What just happened" confirmations.** After on-chain actions (stage created, chain sent, finalized), show a short plain-language explanation of what occurred and where it went — e.g. "Stage recorded on-chain. The previous stage's token was spent to create this one." Keep using the existing `react-hot-toast` for transient feedback; add inline confirmations where helpful.
 - **Status explainers.** When the create modal shows "broadcasting…", say what that means ("Writing this stage to the blockchain — this can take a few seconds"). Explain lock / unlock / self-vs-receiver states in the details panel in *words*, not just icons.
 - **A persistent "How it works" affordance.** A help entry point from the navbar (and/or a reusable info button) opening a concise explainer — and/or a dismissible first-run intro / coach-marks on the builder. Lightweight and presentational; "dismissed" state may use `localStorage` only (no backend).
 - **A short glossary** — a landing-page section, a `/help` route or modal reachable from the navbar, or both. Cover the core terms above in plain English.
 - **Inline microcopy on inputs.** Helper text under every field describing its purpose and what good input looks like (especially the receiver public-key field and the custom metadata rows).
-- **Provenance/trust explainers** on the Examples detail view: state that each stage is a real, verifiable on-chain transaction, what the TXID is, and a one-line "why this matters."
+- **Provenance/trust explainers** on the Directory detail view: state that each stage is a real, verifiable on-chain transaction, what the TXID is, and a one-line "why this matters."
 
 **Tone:** clear, friendly, confident, jargon-light. Short sentences. Educational without being condescending. One consistent voice across all surfaces.
 
@@ -186,7 +186,7 @@ A static, presentational page (can be a server component; no wallet required to 
 3. Landing page.
 4. Create / builder.
 5. Receive.
-6. Examples gallery + detail.
+6. Directory gallery + detail.
 7. Modals (create-stage, stage-details panel + modal).
 8. QA pass: build, lint, test, and click through every state at each breakpoint.
 
@@ -207,8 +207,8 @@ These are the only existing files you should change for visuals.
 | 2 | `src/app/globals.css` | The design-system home — tokens via `@theme` + shadcn CSS variables. |
 | 3 | `src/app/page.tsx` | Currently the **builder**; becomes the **landing page** (or relocate — see §4). |
 | 4 | `src/app/receive/page.tsx` | Receive inbox page. |
-| 5 | `src/app/examples/page.tsx` | Examples gallery page. |
-| 6 | `src/app/examples/[id]/page.tsx` | Example detail page. |
+| 5 | `src/app/directory/page.tsx` | Directory gallery page. |
+| 6 | `src/app/directory/[id]/page.tsx` | Chain detail page. |
 | 7 | `src/components/navbar/navbar.tsx` | Top nav + pending badge. |
 | 8 | `src/components/navbar/connectWallet.tsx` | Wallet connect button. |
 | 9 | `src/components/renderStages/stagesColumn.tsx` | Builder column (title, templates, finalize, add-stage). |

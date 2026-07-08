@@ -242,7 +242,7 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                 <div className="field">
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                         <label className="label">
-                            <InfoTip title="Custom data" body="Fields you add become this passport's standard set and carry into later stages to fill in again.">Custom data</InfoTip>
+                            <InfoTip title="Custom data" align="left" body="Fields you add become this chain's standard set and carry into later stages to fill in again.">Custom data</InfoTip>
                         </label>
                         <button type="button" className="btn btn-soft btn-sm" onClick={addMetadataField}>
                             <Icon name="plus" size={14} />Add field
@@ -344,11 +344,11 @@ export const CreateStageModal = ({ isOpen, onClose, onSubmit, selectedTemplate, 
                     />
                     {imageURL ? (
                         <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 8, border: "1px solid var(--line-2)", borderRadius: "var(--r-sm)", background: "var(--surface-2)" }}>
-                            <div style={{ width: 40, height: 40, borderRadius: "var(--r-sm)", overflow: "hidden", flex: "0 0 auto", background: "var(--surface-3)", display: "grid", placeItems: "center" }}>
+                            <div style={{ width: 64, height: 64, borderRadius: "var(--r-sm)", overflow: "hidden", flex: "0 0 auto", background: "var(--surface-3)", display: "grid", placeItems: "center" }}>
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={imageURL} alt="Stage photo" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                             </div>
-                            <span className="mono" style={{ fontSize: 11.5, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{imageURL}</span>
+                            <div style={{ flex: 1 }} />
                             <button type="button" className="btn btn-ghost btn-sm" onClick={() => fileRef.current?.click()} disabled={isUploading}>Replace</button>
                             <button type="button" className="icon-btn" onClick={() => setImageURL("")} title="Remove photo" aria-label="Remove stage photo">
                                 <Icon name="x" size={15} />

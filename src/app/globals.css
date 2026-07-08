@@ -5,7 +5,7 @@
 @custom-variant dark (&:is(.dark *));
 
 /* ============================================================
-   Dynamic Digital Product Passport: design tokens
+   Dynamic Supply Chain: design tokens
    Direction: WARM PREMIUM · accent: PLUM / AUBERGINE
    Light values live in :root, dark in .dark. Every surface and
    component reads from these vars. This file is the single
@@ -134,7 +134,7 @@
 
   --font-sans: var(--font-geist-sans), -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, "SF Mono", Menlo, monospace;
-  --font-display: var(--font-spectral), Georgia, "Times New Roman", serif;
+  --font-display: var(--font-archivo), "Helvetica Neue", Arial, sans-serif;
 
   --radius-sm: var(--r-sm);
   --radius-md: var(--r);
@@ -176,7 +176,7 @@
    ============================================================ */
 @layer components {
   /* ---- type helpers ---- */
-  .disp { font-family: var(--font-display); letter-spacing: -0.01em; line-height: 1.05; }
+  .disp { font-family: var(--font-display); font-weight: 600; letter-spacing: -0.02em; line-height: 1.05; }
   .mono { font-family: var(--font-mono); font-feature-settings: "ss01"; }
   .muted { color: var(--ink-2); }
   .faint { color: var(--ink-3); }
@@ -200,8 +200,8 @@
     background: var(--accent); color: var(--accent-ink);
     display: grid; place-items: center; flex: 0 0 auto;
   }
-  .brand-name { font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em; white-space: nowrap; }
-  .brand-name small { display: block; font-weight: 400; font-size: 11px; color: var(--ink-3); letter-spacing: 0.02em; }
+  .brand-name { font-family: var(--font-display); font-weight: 600; font-size: 15.5px; letter-spacing: -0.01em; white-space: nowrap; }
+  .brand-name small { display: block; font-family: var(--font-sans); font-weight: 400; font-size: 11px; color: var(--ink-3); letter-spacing: 0.02em; }
   .nav-links { display: flex; align-items: center; gap: 2px; }
   .nav-link {
     padding: 8px 13px; border-radius: var(--r-sm); font-size: 14px; font-weight: 500;
@@ -330,7 +330,9 @@
   .tl-row { position: relative; display: grid; grid-template-columns: 44px 1fr; gap: 0; }
   .tl-rail { position: relative; display: flex; flex-direction: column; align-items: center; }
   .tl-line { width: 2px; flex: 1; background: var(--line-2); }
-  .tl-line.top { min-height: 14px; }
+  /* Fixed height so the dot pins beside the stage header instead of centring
+     against the whole row when details are expanded. */
+  .tl-line.top { flex: 0 0 14px; }
   .tl-line.faded { background: repeating-linear-gradient(var(--line-2) 0 4px, transparent 4px 9px); }
   .tl-dot {
     width: 30px; height: 30px; border-radius: 50%; flex: 0 0 auto;
@@ -369,6 +371,13 @@
   }
   .dark .tip-pop { background: var(--surface-3); color: var(--ink); border: 1px solid var(--line-2); }
   .dark .tip-pop::after { border-top-color: var(--surface-3); }
+  /* Left-anchored variant for terms near a clipping container's left edge
+     (e.g. labels at the start of a modal row), where centring overflows. */
+  .tip-pop.align-left { left: -8px; transform: none; }
+  .tip-pop.align-left::after { left: 20px; transform: none; }
+  .tip:hover .tip-pop.align-left, .tip:focus .tip-pop.align-left, .tip:focus-within .tip-pop.align-left {
+    transform: translateY(-2px);
+  }
 
   /* ---- code / txid ---- */
   .code {

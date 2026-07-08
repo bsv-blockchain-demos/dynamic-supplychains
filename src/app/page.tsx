@@ -5,8 +5,8 @@ import { Brand } from "../components/common/brand";
 
 const REPO_URL = "https://github.com/bsv-blockchain-demos/dynamic-supplychains";
 
-/* A small "passport" preview that sits in the hero. */
-function HeroPassportCard() {
+/* A small chain preview that sits in the hero. */
+function HeroChainCard() {
   const row = (
     n: number,
     label: string,
@@ -171,8 +171,8 @@ export default function LandingPage() {
               className="disp mt-[18px] text-[38px] sm:text-[52px]"
               style={{ color: "var(--hero-ink)" }}
             >
-              Give any product
-              <br />a living passport.
+              Build any supply chain
+              <br />lifecycle, on-chain.
             </h1>
             <p
               style={{
@@ -183,10 +183,9 @@ export default function LandingPage() {
                 maxWidth: 460,
               }}
             >
-              Build any custom supply-chain lifecycle. Compose a chain of
-              stages, each one an immutable, encrypted record of where a
-              product has been and who held it. One adaptable engine instead of
-              a bespoke tool per vertical.
+              Compose a chain of stages, each one an immutable, encrypted
+              record of where a product has been and who held it. One
+              adaptable engine instead of a bespoke tool per vertical.
             </p>
             <div className="mt-[30px] flex flex-wrap gap-3">
               <Link href="/create" className="btn btn-primary btn-lg">
@@ -194,7 +193,7 @@ export default function LandingPage() {
                 <Icon name="arrow-right" size={17} />
               </Link>
               <Link
-                href="/examples"
+                href="/directory"
                 className="btn btn-lg"
                 style={{
                   background: "var(--hero-card)",
@@ -202,7 +201,7 @@ export default function LandingPage() {
                   border: "1px solid var(--hero-line)",
                 }}
               >
-                Browse passports
+                Browse supply chains
               </Link>
             </div>
             <p className="mt-3.5" style={{ fontSize: 12.5, color: "var(--hero-ink-2)" }}>
@@ -255,7 +254,7 @@ export default function LandingPage() {
             </div>
           </div>
           <div className="flex justify-center">
-            <HeroPassportCard />
+            <HeroChainCard />
           </div>
         </div>
       </section>
@@ -273,7 +272,7 @@ export default function LandingPage() {
             letterSpacing: "-.02em",
           }}
         >
-          A <span className="accent-tx">dynamic digital product passport</span>: a
+          A <span className="accent-tx">dynamic supply chain</span>: a
           flexible engine for spinning up a credible, end-to-end record of a
           product&apos;s life, custody and provenance. Built to fit agriculture,
           manufacturing, aviation, pharma, logistics, anything you can break
@@ -292,7 +291,7 @@ export default function LandingPage() {
             How it works
           </h2>
           <span className="muted" style={{ fontSize: 13.5 }}>
-            Four steps from idea to verifiable passport.
+            Four steps from idea to verifiable supply chain.
           </span>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -300,7 +299,7 @@ export default function LandingPage() {
             n={1}
             icon="plus"
             title="Create a chain"
-            body="Name your passport and pick a starting point: a blank chain or a ready-made template."
+            body="Name your supply chain and pick a starting point: a blank chain or a ready-made template."
           />
           <Step
             n={2}
@@ -318,7 +317,7 @@ export default function LandingPage() {
             n={4}
             icon="check-circle"
             title="Finalize"
-            body="Seal the chain. The finished passport is a verifiable record anyone can inspect."
+            body="Seal the chain, making it a verifiable record anyone can inspect."
           />
         </div>
       </section>
@@ -374,7 +373,7 @@ export default function LandingPage() {
       <section className="wrap" style={{ padding: "60px 40px" }}>
         <span className="eyebrow">Trust by design</span>
         <h2 className="disp" style={{ fontSize: 26, margin: "14px 0 26px" }}>
-          Why a passport here is credible
+          Why a supply chain here is credible
         </h2>
         <div className="grid gap-10 md:grid-cols-3">
           <TrustCol icon="fingerprint" title="Immutable record">
@@ -425,7 +424,7 @@ export default function LandingPage() {
               className="disp"
               style={{ fontSize: 23, color: "var(--hero-ink)" }}
             >
-              Build your first passport
+              Build your first supply chain
             </div>
             <div
               style={{

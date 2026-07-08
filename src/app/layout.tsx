@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono, Spectral } from "next/font/google";
+import { Geist, Geist_Mono, Archivo } from "next/font/google";
 import "./globals.css";
 import { WalletContextProvider } from "../context/walletContext";
 import { ThemeProvider } from "../components/common/theme-provider";
@@ -16,18 +16,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-const spectral = Spectral({
-  variable: "--font-spectral",
+const archivo = Archivo({
+  variable: "--font-archivo",
   subsets: ["latin"],
-  weight: ["400", "500", "600"],
-  style: ["normal", "italic"],
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "Dynamic Digital Product Passport",
+  title: "Dynamic Supply Chain",
   description:
-    "Build any custom supply-chain lifecycle. A verifiable, on-chain product passport for any industry.",
+    "Build any custom supply-chain lifecycle. A verifiable, on-chain record of any product's journey, for any industry.",
 };
 
 // Applies the persisted theme before paint so dark mode never flashes.
@@ -42,7 +40,7 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={`${geistSans.variable} ${geistMono.variable} ${spectral.variable}`}
+      className={`${geistSans.variable} ${geistMono.variable} ${archivo.variable}`}
     >
       <head>
         <script dangerouslySetInnerHTML={{ __html: themeInit }} />

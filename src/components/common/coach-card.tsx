@@ -12,12 +12,14 @@ export function CoachCard({
   tone?: "ok" | "warn";
   children: React.ReactNode;
 }) {
+  // Info tone is deliberately neutral (surface, not a colour wash) so
+  // informational callouts don't read as errors or warnings.
   const bg =
     tone === "warn"
       ? "var(--warn-soft)"
       : tone === "ok"
         ? "var(--ok-soft)"
-        : "var(--accent-soft)";
+        : "var(--surface)";
   const fg =
     tone === "warn" ? "var(--warn)" : tone === "ok" ? "var(--ok)" : "var(--accent)";
   const line =
@@ -25,7 +27,7 @@ export function CoachCard({
       ? "color-mix(in srgb, var(--warn) 30%, transparent)"
       : tone === "ok"
         ? "color-mix(in srgb, var(--ok) 30%, transparent)"
-        : "var(--accent-line)";
+        : "var(--line-2)";
   return (
     <div
       style={{

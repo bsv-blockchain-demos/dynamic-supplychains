@@ -21,6 +21,8 @@ export interface ActionChain {
     updatedAt?: Date | null;
     finalized?: boolean;
     finalizedAt?: Date | null;
+    // Hidden from the public directory; still visible to the creator's connected wallet.
+    isPrivate?: boolean | null;
 }
 
 // Action-lock to prevent multiple actions from being processed at the same time

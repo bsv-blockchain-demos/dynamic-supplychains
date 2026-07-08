@@ -284,20 +284,20 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                     eyebrow="Continuing a chain"
                     eyebrowIcon="corner-down-right"
                     title={chain.title || "Untitled chain"}
-                    sub="You hold the latest stage. Add yours to continue the passport, or forward it on by locking the next stage to another wallet."
+                    sub="You hold the latest stage. Add yours to continue the chain, or forward it on by locking the next stage to another wallet."
                 />
 
                 {/* chain info */}
                 <div className="card card-pad" style={{ marginBottom: 18 }}>
                     <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap", marginBottom: 12 }}>
                         <span className="label" style={{ fontWeight: 500 }}>
-                            <InfoTip title="Chain ID" body="The unique on-chain ID for this passport. Share it so anyone can look the passport up and verify it.">
+                            <InfoTip title="Chain ID" body="The unique on-chain ID for this supply chain. Share it so anyone can look the chain up and verify it.">
                                 Chain ID
                             </InfoTip>
                         </span>
                         <span className="txid" style={{ background: "var(--surface-2)", borderColor: "var(--line)" }}>
                             <Icon name="link" size={13} style={{ color: "var(--ink-3)" }} />
-                            <Link href={`/examples/${chain.actionChainId}`} className="v" style={{ color: "inherit" }} title={chain.actionChainId}>
+                            <Link href={`/directory/${chain.actionChainId}`} className="v" style={{ color: "inherit" }} title={chain.actionChainId}>
                                 {chain.actionChainId}
                             </Link>
                             <button
@@ -331,7 +331,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                 {!hasAddedStage && (
                     <div style={{ marginBottom: 16 }}>
                         <CoachCard icon="unlock" tone="ok" title="You can edit this chain">
-                            This stage was locked to your wallet and is now unlocked for you. Add the next stage below. Leave the recipient blank to keep the passport, or set one to forward custody on.
+                            This stage was locked to your wallet and is now unlocked for you. Add the next stage below. Leave the recipient blank to keep the chain, or set one to forward custody on.
                         </CoachCard>
                     </div>
                 )}
@@ -385,7 +385,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                 {hasAddedStage && stages.length < 2 && (
                     <div style={{ marginBottom: 16 }}>
                         <CoachCard icon="alert-triangle" tone="warn" title="Add one more stage">
-                            A passport needs at least 2 stages. You have {stages.length}/2.
+                            A supply chain needs at least 2 stages. You have {stages.length}/2.
                         </CoachCard>
                     </div>
                 )}
@@ -450,7 +450,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                 {hasAddedStage && stages.length >= 2 && (
                     <div className="card card-pad" style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                         <div style={{ minWidth: 0 }}>
-                            <div style={{ fontWeight: 600, fontSize: 14.5 }}>Ready to seal this passport?</div>
+                            <div style={{ fontWeight: 600, fontSize: 14.5 }}>Ready to seal this supply chain?</div>
                             <div className="muted" style={{ fontSize: 12.8, marginTop: 2 }}>
                                 Finalizing makes the chain read-only and permanently verifiable.
                             </div>
@@ -461,7 +461,7 @@ export const ContinueChainColumn = ({ chain, onBack }: ContinueChainColumnProps)
                                 </div>
                             ) : (
                                 <div className="faint" style={{ fontSize: 12, marginTop: 6 }}>
-                                    This completes and submits the passport to the blockchain.
+                                    This completes and submits the supply chain to the blockchain.
                                 </div>
                             )}
                         </div>

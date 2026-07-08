@@ -105,7 +105,7 @@ export const StageItemDetailsModal = ({ transactionId, imageURL, onClose }: Stag
             onClose={onClose}
             icon="package"
             title="Stage details"
-            sub="A permanent, on-chain step in this passport."
+            sub="A permanent, on-chain step in this supply chain."
             width={560}
             footer={
                 <>

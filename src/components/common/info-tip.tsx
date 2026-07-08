@@ -9,10 +9,13 @@ export function InfoTip({
   children,
   title,
   body,
+  align = "center",
 }: {
   children?: React.ReactNode;
   title?: string;
   body: React.ReactNode;
+  /** "left" anchors the popup to the term's left edge, for terms near a clipping container's left edge. */
+  align?: "center" | "left";
 }) {
   return (
     <span className="tip" tabIndex={0}>
@@ -32,7 +35,7 @@ export function InfoTip({
           <Icon name="info" size={13} />
         </span>
       )}
-      <span className="tip-pop" role="tooltip">
+      <span className={`tip-pop${align === "left" ? " align-left" : ""}`} role="tooltip">
         {title && (
           <>
             <b>{title}</b>

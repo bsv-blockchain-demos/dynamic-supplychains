@@ -5,6 +5,7 @@ import Link from "next/link";
 import { toast } from "react-hot-toast";
 import { PageHead } from "../common/page-head";
 import { Icon } from "../common/icon";
+import { useWalletContext } from "../../context/walletContext";
 
 interface ActionChainCard {
     _id: string;
@@ -16,9 +17,10 @@ interface ActionChainCard {
     finalizedAt?: Date;
     firstStage?: string;
     lastStage?: string;
+    isPrivate?: boolean;
 }
 
-function PassportCard({ chain }: { chain: ActionChainCard }) {
+function ChainCard({ chain }: { chain: ActionChainCard }) {
     const creator = `${chain.userId.slice(0, 8)}…${chain.userId.slice(-6)}`;
     const flow =
         chain.firstStage && chain.lastStage
@@ -34,8 +36,13 @@ function PassportCard({ chain }: { chain: ActionChainCard }) {
                 </div>
             )}
             <div style={{ display: "flex", alignItems: "flex-start", justifyContent: "space-between", gap: 10 }}>
-                <div className="disp" style={{ fontSize: 16.5, lineHeight: 1.2 }}>{chain.title || "Untitled passport"}</div>
-                <span className="badge badge-ok" style={{ flex: "0 0 auto" }}><Icon name="check-circle" size={11} />Finalized</span>
+                <div className="disp" style={{ fontSize: 16.5, lineHeight: 1.2 }}>{chain.title || "Untitled chain"}</div>
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "flex-end", gap: 4, flex: "0 0 auto" }}>
+                    <span className="badge badge-ok"><Icon name="check-circle" size={11} />Finalized</span>
+                    {chain.isPrivate && (
+                        <span className="badge"><Icon name="lock" size={11} />Private</span>
+                    )}
+                </div>
             </div>
             <dl className="kv" style={{ rowGap: 6 }}>
                 <dt>Stages</dt>
@@ -57,7 +64,7 @@ function PassportCard({ chain }: { chain: ActionChainCard }) {
             </dl>
             <hr className="divider" />
             <span className="accent-tx" style={{ fontWeight: 600, fontSize: 13.5, display: "inline-flex", alignItems: "center", gap: 6 }}>
-                View passport
+                View chain
                 <Icon name="arrow-right" size={15} />
             </span>
         </div>
@@ -65,6 +72,7 @@ function PassportCard({ chain }: { chain: ActionChainCard }) {
 }
 
 export const ExamplesList = () => {
+    const { userPubKey } = useWalletContext();
     const [actionChains, setActionChains] = useState<ActionChainCard[]>([]);
     const [isLoading, setIsLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState("");
@@ -84,6 +92,10 @@ export const ExamplesList = () => {
             }
             params.append('limit', limit.toString());
             params.append('skip', skip.toString());
+            // Private chains are only returned for their creator
+            if (userPubKey) {
+                params.append('viewer', userPubKey);
+            }
 
             const response = await fetch(`/api/examples?${params.toString()}`);
             const data = await response.json();
@@ -120,10 +132,10 @@ export const ExamplesList = () => {
     };
 
     useEffect(() => {
-        fetchActionChains();
-        // run once on mount; fetchActionChains is stable for this purpose
+        fetchActionChains(serverSearchQuery || undefined, 1);
+        // refetch when the wallet changes so the creator's private chains appear
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [userPubKey]);
 
     // Handle Enter key press to trigger server-side search
     const handleSearchSubmit = (e: React.KeyboardEvent<HTMLInputElement>) => {
@@ -194,10 +206,10 @@ export const ExamplesList = () => {
     return (
         <>
             <PageHead
-                eyebrow="Passport directory"
+                eyebrow="Supply chain directory"
                 eyebrowIcon="scroll-text"
-                title="Finalized passports"
-                sub="Completed, sealed passports, each a verifiable on-chain record. Browse them to see the engine across different industries."
+                title="Finalized supply chains"
+                sub="Completed, sealed supply chains, each a verifiable on-chain record. Browse them to see the engine across different industries."
             />
 
             {/* Search */}
@@ -238,7 +250,7 @@ export const ExamplesList = () => {
                 <>
                     <div style={{ display: "flex", alignItems: "center", gap: 10, justifyContent: "center", padding: "6px 0 20px", color: "var(--ink-2)" }}>
                         <span className="spinner sm" />
-                        <span style={{ fontSize: 13 }}>Loading passports from the chain…</span>
+                        <span style={{ fontSize: 13 }}>Loading supply chains from the blockchain…</span>
                     </div>
                     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                         {[0, 1, 2, 3, 4, 5].map((i) => (
@@ -254,13 +266,13 @@ export const ExamplesList = () => {
                 </>
             )}
 
-            {/* Empty (no passports exist, and not a no-match search) */}
+            {/* Empty (no chains exist, and not a no-match search) */}
             {!isLoading && actionChains.length === 0 && !serverSearchQuery && (
                 <div className="card" style={{ padding: "52px 40px", marginTop: 8 }}>
                     <div className="empty">
                         <div className="empty-ico"><Icon name="scroll-text" size={26} /></div>
-                        <h3>No finalized passports yet</h3>
-                        <p>Once someone seals a passport, it appears here as a verifiable record. Build and finalize one to see it listed.</p>
+                        <h3>No finalized supply chains yet</h3>
+                        <p>Once someone seals a chain, it appears here as a verifiable record. Build and finalize one to see it listed.</p>
                         <Link href="/create" className="btn btn-primary"><Icon name="plus" size={16} />Build your own</Link>
                     </div>
                 </div>
@@ -271,8 +283,8 @@ export const ExamplesList = () => {
                 <div className="card" style={{ padding: "52px 40px" }}>
                     <div className="empty">
                         <div className="empty-ico"><Icon name="search" size={26} /></div>
-                        <h3>No passports match your search</h3>
-                        <p>Try a different title, chain ID, creator, or stage name, or clear the search to see every finalized passport.</p>
+                        <h3>No supply chains match your search</h3>
+                        <p>Try a different title, chain ID, creator, or stage name, or clear the search to see every finalized chain.</p>
                         <button type="button" className="btn btn-outline" onClick={clearSearch}><Icon name="x" size={15} />Clear search</button>
                     </div>
                 </div>
@@ -282,8 +294,8 @@ export const ExamplesList = () => {
             {!isLoading && filteredChains.length > 0 && (
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     {filteredChains.map((chain) => (
-                        <Link key={chain._id} href={`/examples/${chain._id}`} style={{ display: "block" }}>
-                            <PassportCard chain={chain} />
+                        <Link key={chain._id} href={`/directory/${chain._id}`} style={{ display: "block" }}>
+                            <ChainCard chain={chain} />
                         </Link>
                     ))}
                 </div>
@@ -312,7 +324,7 @@ export const ExamplesList = () => {
             {/* Client-side filter count */}
             {!isLoading && actionChains.length > 0 && searchQuery && !serverSearchQuery && (
                 <p className="faint" style={{ fontSize: 12.5, textAlign: "center", marginTop: 26 }}>
-                    Showing {filteredChains.length} of {actionChains.length} finalized passport{actionChains.length !== 1 ? 's' : ''}
+                    Showing {filteredChains.length} of {actionChains.length} finalized supply chain{actionChains.length !== 1 ? 's' : ''}
                 </p>
             )}
 
@@ -320,8 +332,8 @@ export const ExamplesList = () => {
             {!isLoading && actionChains.length > 0 && (serverSearchQuery || !searchQuery) && totalCount <= limit && (
                 <p className="faint" style={{ fontSize: 12.5, textAlign: "center", marginTop: 26 }}>
                     {serverSearchQuery
-                        ? `Showing ${totalCount} finalized passport${totalCount !== 1 ? 's' : ''} matching "${serverSearchQuery}"`
-                        : `Showing ${totalCount} finalized passport${totalCount !== 1 ? 's' : ''}`}
+                        ? `Showing ${totalCount} finalized supply chain${totalCount !== 1 ? 's' : ''} matching "${serverSearchQuery}"`
+                        : `Showing ${totalCount} finalized supply chain${totalCount !== 1 ? 's' : ''}`}
                 </p>
             )}
         </>

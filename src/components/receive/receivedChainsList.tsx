@@ -119,7 +119,7 @@ export const ReceivedChainsList = ({ onSelectChain }: ReceivedChainsListProps) =
             eyebrow="Inbox"
             eyebrowIcon="inbox"
             title="Chains sent to you"
-            sub="Passports another party handed off to your wallet. Continue one to add the next stage, or forward it on."
+            sub="Supply chains another party handed off to your wallet. Continue one to add the next stage, or forward it on."
         />
     );
 
@@ -175,11 +175,11 @@ export const ReceivedChainsList = ({ onSelectChain }: ReceivedChainsListProps) =
                             <InfoTip title="Your wallet ID" body="Your public key: the address others lock stages to so only you can continue them.">
                                 your wallet ID
                             </InfoTip>
-                            . Once it does, you can add the next stage or seal the passport.
+                            . Once it does, you can add the next stage or seal the chain.
                         </p>
                         <div style={{ display: "flex", gap: 10, marginTop: 4, flexWrap: "wrap", justifyContent: "center" }}>
                             <Link href="/create" className="btn btn-primary"><Icon name="plus" size={16} />Build your own</Link>
-                            <Link href="/examples" className="btn btn-outline"><Icon name="scroll-text" size={16} />See examples</Link>
+                            <Link href="/directory" className="btn btn-outline"><Icon name="scroll-text" size={16} />Browse the directory</Link>
                         </div>
                     </div>
                 </div>
@@ -195,7 +195,7 @@ export const ReceivedChainsList = ({ onSelectChain }: ReceivedChainsListProps) =
                 eyebrow="Inbox"
                 eyebrowIcon="inbox"
                 title="Chains sent to you"
-                sub="Passports another party handed off to your wallet. Continue one to add the next stage, or forward it on."
+                sub="Supply chains another party handed off to your wallet. Continue one to add the next stage, or forward it on."
                 right={
                     awaiting > 0 ? (
                         <span className="badge badge-accent"><Icon name="inbox" size={12} />{awaiting} awaiting you</span>
@@ -204,7 +204,7 @@ export const ReceivedChainsList = ({ onSelectChain }: ReceivedChainsListProps) =
             />
 
             <CoachCard icon="info" title="Continue vs. forward">
-                <b style={{ color: "var(--ink)" }}>Continue</b> adds your stage and keeps the passport.{" "}
+                <b style={{ color: "var(--ink)" }}>Continue</b> adds your stage and keeps the chain.{" "}
                 <b style={{ color: "var(--ink)" }}>Forward</b> adds your stage and locks the next one to another party, passing custody along.
             </CoachCard>
 

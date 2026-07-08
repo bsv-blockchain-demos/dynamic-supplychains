@@ -43,10 +43,10 @@ export const Navbar = () => {
         return () => clearInterval(interval);
     }, [userPubKey]);
 
-    const active: "home" | "create" | "receive" | "examples" =
+    const active: "home" | "create" | "receive" | "directory" =
         pathname?.startsWith('/create') ? 'create'
         : pathname?.startsWith('/receive') ? 'receive'
-        : pathname?.startsWith('/examples') ? 'examples'
+        : pathname?.startsWith('/directory') ? 'directory'
         : 'home';
 
     const navLink = (id: typeof active, href: string, label: string, icon: IconName) => (
@@ -67,7 +67,7 @@ export const Navbar = () => {
             <div className="nav-links">
                 {navLink('create', '/create', 'Create', 'plus')}
                 {navLink('receive', '/receive', 'Inbox', 'inbox')}
-                {navLink('examples', '/examples', 'Directory', 'scroll-text')}
+                {navLink('directory', '/directory', 'Directory', 'scroll-text')}
                 <Link href="/#how-it-works" className="nav-link">
                     <Icon name="circle-help" size={15} />
                     How it works

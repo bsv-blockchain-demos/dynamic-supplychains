@@ -1,12 +1,12 @@
-# Dynamic Digital Product Passport
+# Dynamic Supply Chains
 
 > **Build any custom supply chain lifecycle.**
 
-*(also referred to as "Dynamic Supply Chain"; formerly "Supply Chain Action Builder")*
+*(formerly "Supply Chain Action Builder")*
 
-A flexible, fully-customisable **Digital Product Passport** engine built on Bitcoin SV (BSV). Compose a verifiable lifecycle for *any* product — agriculture, manufacturing, aviation, pharmaceuticals, logistics — from free-form **stages**, each carrying arbitrary key/value metadata and recorded as an immutable, encrypted on-chain transaction. Nothing about the journey is hard-coded; you design the passport to fit the product.
+A flexible, fully-customisable **Dynamic Supply Chain** engine built on Bitcoin SV (BSV). Compose a verifiable lifecycle for *any* product — agriculture, manufacturing, aviation, pharmaceuticals, logistics — from free-form **stages**, each carrying arbitrary key/value metadata and recorded as an immutable, encrypted on-chain transaction. Nothing about the journey is hard-coded; you design the chain to fit the product.
 
-It was built to **supersede bespoke, industry-specific supply-chain implementations**: rather than maintaining one codebase per vertical, the same engine adapts to any product journey. Each completed chain *is* a **digital product passport** — a verifiable, end-to-end record of a product's life, custody, and provenance, anchored to the blockchain.
+It was built to **supersede bespoke, industry-specific supply-chain implementations**: rather than maintaining one codebase per vertical, the same engine adapts to any product journey. Each completed chain is a verifiable, end-to-end record of a product's life, custody, and provenance, anchored to the blockchain.
 
 The flexibility comes from three things:
 - **Free-form stages** — name each step whatever your use case needs (1–8 stages per chain).
@@ -15,24 +15,24 @@ The flexibility comes from three things:
 
 ## What this demonstrates
 
-The "dynamic" in Dynamic Supply Chain means the passport is assembled at runtime rather than pre-defined:
+The "dynamic" in Dynamic Supply Chain means the chain is assembled at runtime rather than pre-defined:
 
 - **Variable stage count and structure** — no fixed schema; the journey is whatever the participants build.
 - **Arbitrary metadata** per stage, decided as you go.
 - **Multi-party handoff and branching** — a chain can be passed between any number of independent participants, each adding their own stage before forwarding it on.
-- **Immutable, encrypted on-chain record** — every stage is a BSV transaction whose data is encrypted to the next party's key, so the passport is privacy-preserving yet verifiable.
+- **Immutable, encrypted on-chain record** — every stage is a BSV transaction whose data is encrypted to the next party's key, so the chain is privacy-preserving yet verifiable.
 
-**Example flow:** Alice creates a chain and adds stage 1 (raw materials) → Alice forwards it to Bob → Bob adds stage 2 (manufacturing) and forwards to Carol → Carol adds stage 3 (distribution) and finalizes. The finalized chain is a complete product passport that anyone can browse on the Examples page, with each stage backed by its own on-chain transaction.
+**Example flow:** Alice creates a chain and adds stage 1 (raw materials) → Alice forwards it to Bob → Bob adds stage 2 (manufacturing) and forwards to Carol → Carol adds stage 3 (distribution) and finalizes. The finalized chain is a complete product record that anyone can browse in the Directory, with each stage backed by its own on-chain transaction.
 
 ## Core Concepts
 
 ### 1. Action Chains
 
-An **action chain** is a product passport made of multiple stages. Each stage is recorded as a BSV transaction using the PushDrop protocol.
+An **action chain** is a product's supply chain, made of multiple stages. Each stage is recorded as a BSV transaction using the PushDrop protocol.
 
 - **Stages**: Individual steps in the journey (e.g. "Raw Material Extraction", "Manufacturing", "Distribution"). 1–8 stages per chain.
 - **Metadata**: Custom key/value pairs attached to each stage.
-- **Finalization**: A chain must have at least **2 stages and a title** to be finalized. Once finalized it is immutable and appears in the public Examples gallery.
+- **Finalization**: A chain must have at least **2 stages and a title** to be finalized. Once finalized it is immutable and appears in the public Directory.
 
 ### 2. PushDrop Protocol
 
@@ -42,7 +42,7 @@ The application uses the **PushDrop protocol** from the BSV SDK to store stage d
 
 ### 3. On-Chain Architecture
 
-This is what makes the passport verifiable end-to-end:
+This is what makes the chain verifiable end-to-end:
 
 - **Per-stage encryption** — each stage's JSON is encrypted with `SymmetricKey(sha256(receiverPubKey))` and embedded in the PushDrop script. Only the intended receiver's wallet can decrypt it. If no receiver is specified, the data is locked to the creator ("self").
 - **UTXO chaining** — each new stage *spends the previous stage's 1-satoshi PushDrop output* and creates a new one. This forms a literal on-chain chain of custody: the transactions are linked input-to-output, stage after stage.
@@ -120,9 +120,9 @@ A user may send a chain if they are the original creator (on the first stage), c
    - **Keep for self** (no receiver) → create a lock, continue building.
    - **Send to someone else** → transfer ownership onward.
 
-### Browsing Examples
-1. Navigate to the **Examples** page — a paginated, searchable gallery of all finalized product passports (search by title, ID, creator, or stage).
-2. Click any chain to open `/examples/[id]` and view its full stage history.
+### Browsing the Directory
+1. Navigate to the **Directory** page — a paginated, searchable gallery of all finalized supply chains (search by title, ID, creator, or stage).
+2. Click any chain to open `/directory/[id]` and view its full stage history.
 
 ### Viewing Stage Details
 - Click any stage card to open the details panel.
@@ -135,7 +135,7 @@ A user may send a chain if they are the original creator (on the first stage), c
 The navbar shows a real-time badge on **Received** with the count of pending chains, refreshed every 30 seconds (shows "9+" for 10 or more).
 
 ### Title Validation
-When sending to another user, a chain title is **required** — the send button is disabled and a warning appears until one is provided, ensuring every transferred passport has a meaningful identifier.
+When sending to another user, a chain title is **required** — the send button is disabled and a warning appears until one is provided, ensuring every transferred chain has a meaningful identifier.
 
 ### Template System
 Pre-defined templates with ready-made stage structures (7 stages each):

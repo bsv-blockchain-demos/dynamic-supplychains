@@ -34,6 +34,8 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     const [productImageURL, setProductImageURL] = useState("");
     const [isUploadingProduct, setIsUploadingProduct] = useState(false);
     const [productUploadError, setProductUploadError] = useState<string | null>(null);
+    // Set when a chain is finalized so the builder can point at its directory entry.
+    const [finalizedChain, setFinalizedChain] = useState<{ id: string; title: string } | null>(null);
     const productFileRef = useRef<HTMLInputElement>(null);
 
     const { userWallet, userPubKey, initializeWallet, isConnecting } = useWalletContext();
@@ -99,6 +101,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     }, [userPubKey]);
 
     const handleAddStage = async (data: Record<string, string>) => {
+        setFinalizedChain(null);
         const isFirst = stages.length === 0;
         let lastStage: ActionChainStage | null = null;
         if (!isFirst) {
@@ -301,10 +304,11 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
             }
 
             console.log('Chain finalized successfully:', result);
-            toast.success(`ActionChain finalized with ${result.stagesCount} stages!`, {
+            toast.success(`Supply chain finalized with ${result.stagesCount} stages!`, {
                 duration: 5000,
                 icon: '✅',
             });
+            setFinalizedChain({ id: actionChainId, title: chainTitle });
 
             // Reset state for new chain
             setStages([]);
@@ -331,7 +335,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
         return (
             <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: 16, padding: "64px 0" }}>
                 <Spinner size="lg" />
-                <p className="muted">Loading your Digital Product Passport…</p>
+                <p className="muted">Loading your supply chain…</p>
             </div>
         );
     }
@@ -339,13 +343,30 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
     return (
         <>
             <PageHead
-                eyebrow="New Digital Product Passport"
+                eyebrow="New supply chain"
                 eyebrowIcon="plus"
-                title="Create a Digital Product Passport"
-                sub="A Digital Product Passport records a product's journey, one lifecycle stage at a time. Add at least two stages to tell its story, then finalize to make it a permanent, verifiable record."
+                title="Create a Dynamic Supply Chain"
+                sub="A dynamic supply chain records a product's journey, one lifecycle stage at a time. Add at least two stages to tell its story, then finalize to make it a permanent, verifiable record."
             />
 
             <Stepper current={stepperCurrent} />
+
+            {finalizedChain && (
+                <div style={{ marginBottom: 22 }}>
+                    <CoachCard icon="check-circle" tone="ok" title="Supply chain finalized">
+                        <span>
+                            &ldquo;{finalizedChain.title}&rdquo; is sealed and permanently verifiable. It now
+                            appears in the public directory.
+                        </span>
+                        <div style={{ marginTop: 10 }}>
+                            <Link href={`/directory/${finalizedChain.id}`} className="btn btn-ok btn-sm">
+                                <Icon name="scroll-text" size={14} />
+                                View it in the Directory
+                            </Link>
+                        </div>
+                    </CoachCard>
+                </div>
+            )}
 
             {!connected && (
                 <div className="gate" style={{ marginBottom: 22 }}>
@@ -369,8 +390,8 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                 </div>
             )}
 
-            {/* Guidance: two-up above the form */}
-            <div className="grid gap-4 sm:grid-cols-2" style={{ marginBottom: 22 }}>
+            {/* Guidance: stacked above the form */}
+            <div className="grid gap-4" style={{ marginBottom: 22 }}>
                 {!connected ? (
                     <CoachCard icon="key-round" tone="warn" title="Draft mode">
                         You can name the product and pick a template now. Connect a wallet when you&apos;re ready to record the first stage on-chain.
@@ -380,8 +401,8 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                         Your last stage was written to the blockchain. The previous stage&apos;s token was spent to create it, chaining them together.
                     </CoachCard>
                 ) : (
-                    <CoachCard icon="layers" title="Start your Digital Product Passport">
-                        Add your first stage to begin. Each stage is recorded on-chain as part of this Digital Product Passport&apos;s history.
+                    <CoachCard icon="layers" title="Start your supply chain">
+                        Add your first stage to begin. Each stage is recorded on-chain as part of this supply chain&apos;s history.
                     </CoachCard>
                 )}
 
@@ -392,7 +413,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     </div>
                     <ul style={{ margin: 0, padding: 0, listStyle: "none", display: "flex", flexDirection: "column", gap: 11 }}>
                         {([
-                            ["layers", `A Digital Product Passport needs at least ${MIN_STAGES} stages and holds up to ${MAX_STAGES}.`],
+                            ["layers", `A supply chain needs at least ${MIN_STAGES} stages and holds up to ${MAX_STAGES}.`],
                             ["key-round", "To hand off, add a receiver's wallet ID when creating a stage so only they can continue it."],
                             ["lock", "Leave the receiver blank to keep the stage for yourself."],
                         ] as [IconName, string][]).map(([ic, t]) => (
@@ -407,7 +428,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
 
             {/* Builder */}
             <div>
-                    {/* title + templates + passport id */}
+                    {/* title + templates + chain id */}
                     <div className="card card-pad" style={{ marginBottom: 22 }}>
                         <div className="field">
                             <label className="label" htmlFor="chainTitle">Product or batch name</label>
@@ -419,7 +440,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                                 onChange={(e) => setChainTitle(e.target.value)}
                                 placeholder="Choose a template or enter your own title"
                             />
-                            <span className="help">This becomes the title of your Digital Product Passport.</span>
+                            <span className="help">This becomes the title of your supply chain.</span>
                         </div>
 
                         {/* Product image (primary) */}
@@ -434,11 +455,11 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                             />
                             {productImageURL ? (
                                 <div style={{ display: "flex", alignItems: "center", gap: 12, padding: 8, border: "1px solid var(--line-2)", borderRadius: "var(--r-sm)", background: "var(--surface-2)" }}>
-                                    <div style={{ width: 56, height: 56, borderRadius: "var(--r-sm)", overflow: "hidden", flex: "0 0 auto", background: "var(--surface-3)", display: "grid", placeItems: "center" }}>
+                                    <div style={{ width: 72, height: 72, borderRadius: "var(--r-sm)", overflow: "hidden", flex: "0 0 auto", background: "var(--surface-3)", display: "grid", placeItems: "center" }}>
                                         {/* eslint-disable-next-line @next/next/no-img-element */}
                                         <img src={productImageURL} alt="Product image" style={{ width: "100%", height: "100%", objectFit: "cover" }} />
                                     </div>
-                                    <span className="mono" style={{ fontSize: 11.5, flex: 1, minWidth: 0, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>{productImageURL}</span>
+                                    <div style={{ flex: 1 }} />
                                     <button type="button" className="btn btn-ghost btn-sm" onClick={() => productFileRef.current?.click()} disabled={isUploadingProduct}>Replace</button>
                                     <button type="button" className="icon-btn" onClick={() => setProductImageURL("")} title="Remove image" aria-label="Remove product image">
                                         <Icon name="x" size={15} />
@@ -458,7 +479,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                                         <span className="empty-ico" style={{ width: 40, height: 40, marginBottom: 0 }}><Icon name="upload" size={20} /></span>
                                     )}
                                     <span style={{ fontWeight: 600, fontSize: 14, color: "var(--ink)" }}>{isUploadingProduct ? "Uploading…" : "Upload a product image"}</span>
-                                    <span className="faint" style={{ fontSize: 11.5 }}>Shown on the passport. PNG, JPG, WebP, GIF or PDF, up to 10MB.</span>
+                                    <span className="faint" style={{ fontSize: 11.5 }}>Shown on the chain. PNG, JPG, WebP, GIF or PDF, up to 10MB.</span>
                                 </button>
                             )}
                             {productUploadError ? (
@@ -466,7 +487,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                                     <Icon name="alert-triangle" size={12} />{productUploadError}
                                 </span>
                             ) : (
-                                <span className="help">The main image for this Digital Product Passport.</span>
+                                <span className="help">The main image for this supply chain.</span>
                             )}
                         </div>
 
@@ -510,16 +531,16 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                                 <div style={{ display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, flexWrap: "wrap" }}>
                                     <span className="label" style={{ fontWeight: 500 }}>
                                         <InfoTip
-                                            title="Passport ID"
-                                            body="The unique on-chain ID for this Digital Product Passport. Share it so anyone can look it up and verify it."
+                                            title="Chain ID"
+                                            body="The unique on-chain ID for this supply chain. Share it so anyone can look it up and verify it."
                                         >
-                                            Passport ID
+                                            Chain ID
                                         </InfoTip>
                                     </span>
                                     <span className="txid" style={{ background: "var(--surface-2)", borderColor: "var(--line)" }}>
                                         <Icon name="link" size={13} style={{ color: "var(--ink-3)" }} />
                                         <Link
-                                            href={`/examples/${actionChainId}`}
+                                            href={`/directory/${actionChainId}`}
                                             className="v"
                                             style={{ color: "inherit" }}
                                             title={actionChainId}
@@ -532,10 +553,10 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                                             onClick={(e) => {
                                                 e.preventDefault();
                                                 navigator.clipboard.writeText(actionChainId);
-                                                toast.success('Passport ID copied to clipboard!', { duration: 2000 });
+                                                toast.success('Chain ID copied to clipboard!', { duration: 2000 });
                                             }}
-                                            title="Copy Passport ID"
-                                            aria-label="Copy Passport ID"
+                                            title="Copy Chain ID"
+                                            aria-label="Copy Chain ID"
                                         >
                                             <Icon name="copy" size={13} />
                                         </button>
@@ -549,7 +570,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     {needsMoreStages && stages.length > 0 && (
                         <div style={{ marginBottom: 22 }}>
                             <CoachCard icon="alert-triangle" tone="warn" title="Add one more stage">
-                                A Digital Product Passport needs at least {MIN_STAGES} stages. You have {stages.length}/{MIN_STAGES}.
+                                A supply chain needs at least {MIN_STAGES} stages. You have {stages.length}/{MIN_STAGES}.
                             </CoachCard>
                         </div>
                     )}
@@ -628,9 +649,9 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                     {stages.length >= MIN_STAGES && actionChainId && (
                         <div className="card card-pad" style={{ marginTop: 16, display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
                             <div style={{ minWidth: 0 }}>
-                                <div style={{ fontWeight: 600, fontSize: 14.5 }}>Ready to finalize this Digital Product Passport?</div>
+                                <div style={{ fontWeight: 600, fontSize: 14.5 }}>Ready to finalize this supply chain?</div>
                                 <div className="muted" style={{ fontSize: 12.8, marginTop: 2 }}>
-                                    Finalizing makes the DPP read-only and permanently verifiable. You can&apos;t add stages after.
+                                    Finalizing makes the chain read-only and permanently verifiable. You can&apos;t add stages after.
                                 </div>
                                 {titleMissing ? (
                                     <div style={{ fontSize: 12, marginTop: 6, color: "var(--warn)", display: "inline-flex", alignItems: "center", gap: 5 }}>
@@ -639,7 +660,7 @@ export const StagesColumn = (props: { stages?: ActionChainStage[] }) => {
                                     </div>
                                 ) : (
                                     <div className="faint" style={{ fontSize: 12, marginTop: 6 }}>
-                                        This completes and submits your Digital Product Passport to the blockchain.
+                                        This completes and submits your supply chain to the blockchain.
                                     </div>
                                 )}
                             </div>
