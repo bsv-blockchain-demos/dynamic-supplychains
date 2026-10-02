@@ -110,4 +110,4 @@ Authentication, data confidentiality and production operation need further devel
 
 ## Licence
 
-A licence file is not included in this checkout. The earlier README's MIT label is not accompanied by licence terms; the intended licence needs confirmation.
+**Documented licence: MIT.** This is the declaration recorded in the project documentation. No standalone licence file or package licence declaration is included in this repository.
