@@ -1,7 +1,7 @@
 # Multi-stage build for optimized production image
 
 # Stage 1: Dependencies
-FROM node:20-alpine AS deps
+FROM node:24.22.1-alpine AS deps
 WORKDIR /app
 
 # Copy package files
@@ -11,7 +11,7 @@ COPY package*.json ./
 RUN npm ci
 
 # Stage 2: Build the application
-FROM node:20-alpine AS builder
+FROM node:24.22.1-alpine AS builder
 WORKDIR /app
 
 # Copy dependencies from deps stage
@@ -24,7 +24,7 @@ COPY . .
 RUN npm run build
 
 # Stage 3: Production server
-FROM node:20-alpine AS runner
+FROM node:24.22.1-alpine AS runner
 WORKDIR /app
 
 # Set to production environment
